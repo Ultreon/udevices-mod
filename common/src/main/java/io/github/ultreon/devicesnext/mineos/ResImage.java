@@ -1,6 +1,6 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
-import com.ultreon.mods.lib.client.devicetest.gui.McComponent;
+import io.github.ultreon.devicesnext.mineos.gui.McComponent;
 import net.minecraft.network.chat.Component;
 
 public class ResImage extends McComponent implements ResolutionImage {

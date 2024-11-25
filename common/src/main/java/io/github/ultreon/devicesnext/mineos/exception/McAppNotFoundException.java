@@ -1,6 +1,6 @@
-package com.ultreon.mods.lib.client.devicetest.exception;
+package io.github.ultreon.devicesnext.mineos.exception;
 
-import com.ultreon.mods.lib.client.devicetest.ApplicationId;
+import io.github.ultreon.devicesnext.mineos.ApplicationId;
 
 public class McAppNotFoundException extends McOperatingSystemException {
     public McAppNotFoundException(ApplicationId id) {

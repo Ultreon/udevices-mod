@@ -1,8 +1,8 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
-import com.ultreon.libs.commons.v0.size.IntSize;
 import com.ultreon.mods.lib.UltreonLib;
-import com.ultreon.mods.lib.client.devicetest.gui.McLabel;
+import io.github.ultreon.devicesnext.mineos.gui.McLabel;
+import io.github.ultreon.devicesnext.mineos.sizing.IntSize;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;

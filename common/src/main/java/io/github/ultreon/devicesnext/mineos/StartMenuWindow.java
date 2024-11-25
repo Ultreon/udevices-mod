@@ -1,11 +1,11 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import com.ultreon.mods.lib.UltreonLib;
-import com.ultreon.mods.lib.client.devicetest.exception.McAppNotFoundException;
-import com.ultreon.mods.lib.client.devicetest.exception.McNoPermissionException;
-import com.ultreon.mods.lib.client.devicetest.exception.McSecurityException;
-import com.ultreon.mods.lib.client.devicetest.gui.McButton;
-import com.ultreon.mods.lib.client.devicetest.gui.McContainer;
+import io.github.ultreon.devicesnext.mineos.exception.McAppNotFoundException;
+import io.github.ultreon.devicesnext.mineos.exception.McNoPermissionException;
+import io.github.ultreon.devicesnext.mineos.exception.McSecurityException;
+import io.github.ultreon.devicesnext.mineos.gui.McButton;
+import io.github.ultreon.devicesnext.mineos.gui.McContainer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;

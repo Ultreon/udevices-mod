@@ -1,6 +1,6 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
-import com.ultreon.mods.lib.client.devicetest.security.Permission;
+import io.github.ultreon.devicesnext.mineos.security.Permission;
 
 import java.util.HashSet;
 import java.util.Set;

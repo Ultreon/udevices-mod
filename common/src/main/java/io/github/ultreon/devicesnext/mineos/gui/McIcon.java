@@ -1,6 +1,6 @@
-package com.ultreon.mods.lib.client.devicetest.gui;
+package io.github.ultreon.devicesnext.mineos.gui;
 
-import com.ultreon.mods.lib.client.devicetest.Icon;
+import io.github.ultreon.devicesnext.mineos.Icon;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;

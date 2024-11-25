@@ -1,17 +1,16 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Queues;
-import com.ultreon.libs.commons.v0.size.IntSize;
-import com.ultreon.mods.lib.client.devicetest.gui.McComponent;
+import io.github.ultreon.devicesnext.mineos.gui.McComponent;
 import com.ultreon.mods.lib.util.ScissorStack;
+import io.github.ultreon.devicesnext.mineos.sizing.IntSize;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
 
-import java.awt.*;
 import java.util.List;
 import java.util.*;
 
@@ -75,7 +74,7 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
 
             while (dialog != null) {
                 @Nullable IntSize forceSize = _window.getForceSize();
-                if (forceSize != null) _window.resize(forceSize.width(), forceSize.height());
+                if (forceSize != null) _window.resize(forceSize.width, forceSize.height);
                 @Nullable Vector2i forcePosition = _window.getForcePosition();
                 if (forcePosition != null) _window.setPosition(forcePosition.x, forcePosition.y);
                 _window.render(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, partialTicks);
@@ -86,7 +85,7 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
             }
 
             @Nullable IntSize forceSize = _window.getForceSize();
-            if (forceSize != null) _window.resize(forceSize.width(), forceSize.height());
+            if (forceSize != null) _window.resize(forceSize.width, forceSize.height);
             @Nullable Vector2i forcePosition = _window.getForcePosition();
             if (forcePosition != null) _window.setPosition(forcePosition.x, forcePosition.y);
             if (_window.equals(hoveredWindow)) _window.render(gfx, mouseX, mouseY, partialTicks);
@@ -350,11 +349,11 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amountX, double amountY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amountX) {
         synchronized (this.wmLock) {
             for (var window : this.windows()) {
                 try {
-                    if (window.isMouseOver(mouseX, mouseY) && window.mouseScrolled(mouseX, mouseY, amountX, amountY)) {
+                    if (window.isMouseOver(mouseX, mouseY) && window.mouseScrolled(mouseX, mouseY, amountX)) {
                         return true;
                     }
                 } catch (Exception e) {
@@ -362,7 +361,7 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
                     return false;
                 }
             }
-            return super.mouseScrolled(mouseX, mouseY, amountX, amountY);
+            return super.mouseScrolled(mouseX, mouseY, amountX);
         }
     }
 

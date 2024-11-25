@@ -1,7 +1,6 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import com.google.common.collect.Lists;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 @SuppressWarnings("BooleanMethodIsAlwaysInverted")
 final class Kernel extends SystemApp {
@@ -19,7 +18,6 @@ final class Kernel extends SystemApp {
         this.verbose = argv.remove("-v");
     }
 
-    @CanIgnoreReturnValue
     public boolean isVerbose() {
         return verbose;
     }

@@ -1,7 +1,7 @@
-package com.ultreon.mods.lib.client.devicetest.exception;
+package io.github.ultreon.devicesnext.mineos.exception;
 
-import com.ultreon.mods.lib.client.devicetest.Application;
-import com.ultreon.mods.lib.client.devicetest.security.Permission;
+import io.github.ultreon.devicesnext.mineos.Application;
+import io.github.ultreon.devicesnext.mineos.security.Permission;
 
 public class McNoPermissionException extends McPermissionException {
 

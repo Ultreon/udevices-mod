@@ -1,9 +1,8 @@
-package com.ultreon.mods.lib.client.devicetest.gui;
+package io.github.ultreon.devicesnext.mineos.gui;
 
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.ultreon.mods.lib.UltreonLib;
-import com.ultreon.mods.lib.client.devicetest.ResImage;
+import io.github.ultreon.devicesnext.mineos.ResImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -74,7 +73,6 @@ public class McImage extends ResImage {
     }
 
     @Contract("_->this")
-    @CanIgnoreReturnValue
     public McImage loadFrom(File file) {
         this.loader = new FileImageLoader(file);
         refresh();
@@ -82,7 +80,6 @@ public class McImage extends ResImage {
     }
 
     @Contract("_->this")
-    @CanIgnoreReturnValue
     public McImage loadFrom(Path path) {
         this.loader = new FileImageLoader(path.toFile());
         refresh();
@@ -90,7 +87,6 @@ public class McImage extends ResImage {
     }
 
     @Contract("_->this")
-    @CanIgnoreReturnValue
     public McImage loadFrom(InputStream stream) {
         this.loader = new InputStreamImageLoader(stream);
         refresh();
@@ -98,7 +94,6 @@ public class McImage extends ResImage {
     }
 
     @Contract("_->this")
-    @CanIgnoreReturnValue
     public McImage loadFrom(byte[] bytes) {
         this.loader = new ByteArrayImageLoader(bytes);
         refresh();
@@ -106,7 +101,6 @@ public class McImage extends ResImage {
     }
 
     @Contract("_->this")
-    @CanIgnoreReturnValue
     public McImage loadFrom(ByteArrayTag nbt) {
         this.loader = new ByteArrayImageLoader(nbt.getAsByteArray());
         refresh();
@@ -114,7 +108,6 @@ public class McImage extends ResImage {
     }
 
     @Contract("_->this")
-    @CanIgnoreReturnValue
     public McImage loadFrom(FriendlyByteBuf buf) {
         this.loader = new ByteArrayImageLoader(buf.readByteArray());
         refresh();
@@ -122,7 +115,6 @@ public class McImage extends ResImage {
     }
 
     @Contract("_,_->this")
-    @CanIgnoreReturnValue
     public McImage loadFrom(FriendlyByteBuf buf, int maxLength) {
         this.loader = new ByteArrayImageLoader(buf.readByteArray(maxLength));
         refresh();
@@ -130,7 +122,6 @@ public class McImage extends ResImage {
     }
 
     @Contract("_->this")
-    @CanIgnoreReturnValue
     public McImage loadFrom(ByteBuffer buffer) {
         this.loader = new ByteBufferImageLoader(buffer);
         refresh();
@@ -192,14 +183,13 @@ public class McImage extends ResImage {
     }
 
     @Override
-    public boolean onLeftClick(int clicks) {
+    public void onLeftClick(int clicks) {
         super.onLeftClick(clicks);
         boolean flag = false;
         for (var callback : onClick) {
             callback.onClick(this, clicks);
             flag = true;
         }
-        return flag;
     }
 
     @Override

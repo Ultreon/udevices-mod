@@ -1,8 +1,9 @@
-package com.ultreon.mods.lib.client.devicetest.gui;
+package io.github.ultreon.devicesnext.mineos.gui;
 
-import com.ultreon.mods.lib.client.devicetest.Icon;
+import io.github.ultreon.devicesnext.mineos.Icon;
 import com.ultreon.mods.lib.util.ScissorStack;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,7 +49,7 @@ public class McButton extends McComponent {
         {
             if (this.icon != null) {
                 this.icon.render(gfx, getX() + 2, getY() + 2, 11, 11);
-                this.renderScrollingString(gfx, font, getX() + 14, getY() + 1, this.getWidth() - 15, this.getHeight() - 2, 0xffffffff);
+                renderScrollingString(gfx, font, this.getMessage(), getX() + 14, getY() + 1, this.getWidth() - 15, this.getHeight() - 2, 0xffffffff);
             } else {
                 this.renderScrollingString(gfx, font, 1, 0xffffffff);
             }

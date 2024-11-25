@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest.gui;
+package io.github.ultreon.devicesnext.mineos.gui;
 
 import com.ultreon.mods.lib.util.ScissorStack;
 import net.minecraft.client.gui.GuiGraphics;

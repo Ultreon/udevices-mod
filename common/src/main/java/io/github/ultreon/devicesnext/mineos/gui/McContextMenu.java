@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest.gui;
+package io.github.ultreon.devicesnext.mineos.gui;
 
 import net.minecraft.network.chat.Component;
 import org.apache.commons.compress.utils.Lists;

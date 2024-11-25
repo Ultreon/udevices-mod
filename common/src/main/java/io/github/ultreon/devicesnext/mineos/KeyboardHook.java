@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 public abstract class KeyboardHook {
     public KeyboardHook keyPressed(int keyCode, int scanCode, int modifiers, KeyboardHook next) {

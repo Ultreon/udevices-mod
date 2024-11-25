@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 sealed class SystemApp extends Application permits Kernel {
     public SystemApp(String id) {

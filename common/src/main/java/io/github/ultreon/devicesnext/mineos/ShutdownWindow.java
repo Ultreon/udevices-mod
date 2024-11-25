@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;

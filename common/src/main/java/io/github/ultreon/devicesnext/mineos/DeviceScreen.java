@@ -1,9 +1,8 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import com.google.common.collect.Lists;
-import com.ultreon.mods.lib.client.gui.FrameType;
-import com.ultreon.mods.lib.client.gui.MoreGuiGraphics;
 import com.ultreon.mods.lib.client.gui.screen.BaseScreen;
+import io.github.ultreon.devicesnext.api.OperatingSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -14,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
-import java.awt.*;
 import java.util.Set;
 
 /**
@@ -79,7 +77,7 @@ public class DeviceScreen extends BaseScreen {
 
     @Override
     public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(gfx, mouseX, mouseY, partialTicks);
+        this.renderBackground(gfx);
 
         double[] xPos = new double[1];
         double[] yPos = new double[1];
@@ -97,30 +95,30 @@ public class DeviceScreen extends BaseScreen {
         int finalMouseY = mouseY;
 
         if (!this.desktopFullscreen) {
-            BaseScreen.renderFrame(gfx, this.desktopX - 8, this.desktopY - 8, this.desktopWidth + 16, this.desktopHeight + 16, this.globalTheme.getWindowTheme(), FrameType.BORDER);
+//            BaseScreen.renderFrame(gfx, this.desktopX - 8, this.desktopY - 8, this.desktopWidth + 16, this.desktopHeight + 16, this.getTheme(), FrameType.BORDER);
         }
 
-        MoreGuiGraphics.subInstance(gfx, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, () -> {
+//        MoreGuiGraphics.subInstance(gfx, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, () -> {
             this.system.setWidth(this.width);
             this.system.setHeight(this.height);
             this.system.render(gfx, finalMouseX - this.desktopX, finalMouseY - this.desktopY, partialTicks);
-        });
+//        });
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderBackground(@NotNull GuiGraphics gfx) {
         if (!this.desktopFullscreen) {
             if (this.back != null) {
                 gfx.pose().pushPose();
                 gfx.pose().translate(0, 0, -2000);
 
-                this.back.render(gfx, mouseX, mouseY, partialTicks);
+                this.back.render(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, minecraft.getDeltaFrameTime());
 
                 gfx.pose().popPose();
             }
-            this.renderTransparentBackground(gfx);
+            this.renderDirtBackground(gfx);
         } else {
-            super.renderBackground(gfx, mouseX, mouseY, partialTicks);
+            super.renderBackground(gfx);
         }
     }
 
@@ -161,8 +159,8 @@ public class DeviceScreen extends BaseScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amountX, double amountY) {
-        return isMouseOverDisplay(mouseX, mouseY) && system.mouseScrolled(mouseX - desktopX, mouseY - desktopY, amountX, amountY);
+    public boolean mouseScrolled(double mouseX, double mouseY, double amountY) {
+        return isMouseOverDisplay(mouseX, mouseY) && system.mouseScrolled(mouseX - desktopX, mouseY - desktopY, amountY);
     }
 
     private boolean isMouseOverDisplay(double mouseX, double mouseY) {

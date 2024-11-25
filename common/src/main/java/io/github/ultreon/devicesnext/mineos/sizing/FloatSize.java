@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest.sizing;
+package io.github.ultreon.devicesnext.mineos.sizing;
 
 import java.util.Objects;
 

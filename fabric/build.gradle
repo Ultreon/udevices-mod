@@ -16,13 +16,19 @@ configurations {
 }
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    modApi "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    modApi "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
     // Remove the next line if you don't want to depend on the API
-    modApi "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
+    modApi "dev.architectury:architectury-fabric:${architectury_version}"
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+
+    modApi "dev.ultreon.ultreonlib:ultreon-lib-fabric:$ultreonlib_version", {
+        exclude group: 'net.fabricmc'
+        exclude group: 'dev.ultreon', module: "ultreon-data"
+        exclude group: 'dev.ultreon.corelibs'
+    }
 }
 
 processResources {

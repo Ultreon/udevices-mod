@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 public final class DesktopApplication extends Application {
     private DesktopWindow desktop;

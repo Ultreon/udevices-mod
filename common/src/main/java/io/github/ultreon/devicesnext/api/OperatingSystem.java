@@ -1,11 +1,11 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.api;
 
-import com.ultreon.mods.lib.client.devicetest.exception.McNoPermissionException;
-import com.ultreon.mods.lib.client.devicetest.exception.McSecurityException;
-import com.ultreon.mods.lib.client.devicetest.sizing.IntSize;
-import com.ultreon.mods.lib.input.GameKeyboard;
+import com.ultreon.mods.lib.util.KeyboardHelper;
+import io.github.ultreon.devicesnext.mineos.*;
+import io.github.ultreon.devicesnext.mineos.exception.McNoPermissionException;
+import io.github.ultreon.devicesnext.mineos.exception.McSecurityException;
+import io.github.ultreon.devicesnext.mineos.sizing.IntSize;
 
-import java.awt.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
@@ -23,7 +23,7 @@ public interface OperatingSystem {
 
     void removeKeyboardHook(KeyboardHook keyboardHook);
 
-    GameKeyboard.Modifier getMetaKey();
+    KeyboardHelper.Modifier getMetaKey();
 
     static OperatingSystem get() {
         return OperatingSystemImpl.get();
@@ -33,7 +33,7 @@ public interface OperatingSystem {
 
     void loadWallpaper(Path path);
 
-    void setColorBackground(com.ultreon.libs.commons.v0.Color color);
+    void setColorBackground(Color color);
 
     int getWidth();
 

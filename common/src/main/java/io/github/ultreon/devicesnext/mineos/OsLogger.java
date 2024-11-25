@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 public interface OsLogger {
     void debug(String message);

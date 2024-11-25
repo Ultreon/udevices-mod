@@ -1,21 +1,19 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import com.google.common.base.Preconditions;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.ultreon.libs.commons.v0.Color;
-import com.ultreon.libs.commons.v0.util.ExceptionUtils;
 import com.ultreon.mods.lib.UltreonLib;
-import com.ultreon.mods.lib.client.devicetest.security.Permission;
-import com.ultreon.mods.lib.client.devicetest.security.SpawnApplicationPermission;
-import com.ultreon.mods.lib.client.gui.screen.test.device.TestEmptyApplication;
-import com.ultreon.mods.lib.client.devicetest.exception.McAccessDeniedException;
-import com.ultreon.mods.lib.client.devicetest.exception.McAppNotFoundException;
-import com.ultreon.mods.lib.client.devicetest.exception.McNoPermissionException;
-import com.ultreon.mods.lib.client.devicetest.exception.McSecurityException;
-import com.ultreon.mods.lib.client.devicetest.sizing.IntSize;
-import com.ultreon.mods.lib.input.GameKeyboard;
-import com.ultreon.mods.lib.input.GameKeyboard.Modifier;
+import com.ultreon.mods.lib.util.KeyboardHelper;
+import io.github.ultreon.devicesnext.api.Color;
+import io.github.ultreon.devicesnext.api.OperatingSystem;
+import io.github.ultreon.devicesnext.mineos.security.Permission;
+import io.github.ultreon.devicesnext.mineos.security.SpawnApplicationPermission;
+import io.github.ultreon.devicesnext.mineos.exception.McAccessDeniedException;
+import io.github.ultreon.devicesnext.mineos.exception.McAppNotFoundException;
+import io.github.ultreon.devicesnext.mineos.exception.McNoPermissionException;
+import io.github.ultreon.devicesnext.mineos.exception.McSecurityException;
+import io.github.ultreon.devicesnext.mineos.sizing.IntSize;
 import com.ultreon.mods.lib.util.ScissorStack;
 import it.unimi.dsi.fastutil.objects.Reference2LongArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
@@ -28,7 +26,6 @@ import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
@@ -36,7 +33,9 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-final class OperatingSystemImpl extends WindowManager implements OperatingSystem {
+import static com.ultreon.mods.lib.util.KeyboardHelper.*;
+
+public final class OperatingSystemImpl extends WindowManager implements OperatingSystem {
     private static OperatingSystemImpl instance;
     private final Map<ApplicationId, ApplicationFactory<?>> applications = new HashMap<>();
     private final Map<Class<?>, ApplicationId> applicationTypes = new HashMap<>();
@@ -76,7 +75,6 @@ final class OperatingSystemImpl extends WindowManager implements OperatingSystem
             this._spawn(this.kernel, new String[]{});
             this.registerApp(this.kernel.getId(), () -> this.kernel);
             this.registerApp(DesktopApplication.id(), () -> desktopApp);
-            this.registerApp(TestEmptyApplication.id(), TestEmptyApplication::new);
 
             // Setup permissions
             this.permissionManager.grantPermission(DesktopApplication.id(), Permission.SHUTDOWN);
@@ -326,11 +324,11 @@ final class OperatingSystemImpl extends WindowManager implements OperatingSystem
 
             Window activeWindow = getActiveWindow();
             try {
-                if ((keyCode == InputConstants.KEY_Q && GameKeyboard.isKeyDown(metaKey)) || (keyCode == InputConstants.KEY_F4 && GameKeyboard.isAltDown())) {
+                if ((keyCode == InputConstants.KEY_Q && KeyboardHelper.isKeyDown(metaKey)) || (keyCode == InputConstants.KEY_F4 && KeyboardHelper.isAltDown())) {
                     activeWindow.close();
                     return true;
                 }
-                if (GameKeyboard.isKeyDown(metaKey)) {
+                if (KeyboardHelper.isKeyDown(metaKey)) {
                     switch (keyCode) {
                         case InputConstants.KEY_UP -> {
                             if (activeWindow.isMinimized()) activeWindow.restore();
@@ -498,16 +496,11 @@ final class OperatingSystemImpl extends WindowManager implements OperatingSystem
     }
 
     @Override
-    public void resize(int width, int height) {
-
-    }
-
-    @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amountX, double amountY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amountY) {
         if (this.bsod != null) return false;
 
         try {
-            return super.mouseScrolled(mouseX, mouseY, amountX, amountY);
+            return super.mouseScrolled(mouseX, mouseY, amountY);
         } catch (Throwable throwable) {
             this._raiseHardError(throwable);
             return false;
@@ -608,5 +601,9 @@ final class OperatingSystemImpl extends WindowManager implements OperatingSystem
 
     private List<ApplicationId> _getApplications() {
         return this.applications.keySet().stream().sorted(Comparator.comparing(a -> a.getName().getString())).toList();
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
     }
 }

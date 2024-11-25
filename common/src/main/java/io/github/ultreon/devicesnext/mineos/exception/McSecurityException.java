@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest.exception;
+package io.github.ultreon.devicesnext.mineos.exception;
 
 public class McSecurityException extends McOperatingSystemException {
     public McSecurityException() {

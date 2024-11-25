@@ -1,7 +1,7 @@
-package com.ultreon.mods.lib.client.devicetest.security;
+package io.github.ultreon.devicesnext.mineos.security;
 
-import com.ultreon.mods.lib.client.devicetest.ApplicationId;
-import com.ultreon.mods.lib.client.devicetest.DesktopApplication;
+import io.github.ultreon.devicesnext.mineos.ApplicationId;
+import io.github.ultreon.devicesnext.mineos.DesktopApplication;
 
 import java.util.Objects;
 

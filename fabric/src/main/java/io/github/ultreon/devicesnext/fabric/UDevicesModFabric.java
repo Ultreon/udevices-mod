@@ -1,11 +1,11 @@
 package io.github.ultreon.devicesnext.fabric;
 
-import io.github.ultreon.devicesnext.Udevices;
+import io.github.ultreon.devicesnext.UDevicesMod;
 import net.fabricmc.api.ModInitializer;
 
-public class UdevicesFabric implements ModInitializer {
+public class UDevicesModFabric implements ModInitializer {
     @Override
     public void onInitialize() {
-        Udevices.init();
+        UDevicesMod.init();
     }
 }

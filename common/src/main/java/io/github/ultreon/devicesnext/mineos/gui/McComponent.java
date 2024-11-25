@@ -1,14 +1,14 @@
-package com.ultreon.mods.lib.client.devicetest.gui;
+package io.github.ultreon.devicesnext.mineos.gui;
 
-import com.ultreon.mods.lib.client.devicetest.OperatingSystem;
 import com.ultreon.mods.lib.client.gui.widget.BaseWidget;
+import io.github.ultreon.devicesnext.api.OperatingSystem;
+import io.github.ultreon.devicesnext.mineos.Insets;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 
 public abstract class McComponent extends BaseWidget {
     private McContextMenu contextMenu;
@@ -62,5 +62,9 @@ public abstract class McComponent extends BaseWidget {
     @Override
     protected void updateWidgetNarration(@NotNull NarrationElementOutput output) {
         defaultButtonNarrationText(output);
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
     }
 }

@@ -1,8 +1,8 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.ultreon.mods.lib.client.devicetest.gui.McComponent;
-import com.ultreon.mods.lib.client.devicetest.gui.McImage;
+import io.github.ultreon.devicesnext.mineos.gui.McComponent;
+import io.github.ultreon.devicesnext.mineos.gui.McImage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;

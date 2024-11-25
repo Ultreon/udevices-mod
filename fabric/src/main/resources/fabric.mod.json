@@ -14,7 +14,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "io.github.ultreon.udevices.fabric.UdevicesFabric"
+      "io.github.ultreon.devicesnext.fabric.UDevicesModFabric"
     ]
   },
   "mixins": [
@@ -23,6 +23,6 @@
   ],
   "depends": {
     "fabricloader": ">=0.15.7",
-    "minecraft": ">=1.20.2"
+    "minecraft": ">=1.20.1"
   }
 }

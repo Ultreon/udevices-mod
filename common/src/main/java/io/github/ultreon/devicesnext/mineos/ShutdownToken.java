@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;

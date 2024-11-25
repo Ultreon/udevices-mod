@@ -1,4 +1,4 @@
-package com.ultreon.mods.lib.client.devicetest.security;
+package io.github.ultreon.devicesnext.mineos.security;
 
 import java.util.Objects;
 

@@ -1,9 +1,9 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.ultreon.mods.lib.UltreonLib;
-import com.ultreon.mods.lib.input.GameKeyboard;
+import com.ultreon.mods.lib.util.KeyboardHelper;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +36,7 @@ public final class TaskbarWindow extends Window {
         this.getApplication().getSystem().addKeyboardHook(new KeyboardHook() {
             @Override
             public KeyboardHook keyPressed(int keyCode, int scanCode, int modifiers, KeyboardHook next) {
-                if (keyCode == InputConstants.KEY_A && GameKeyboard.isKeyDown(getApplication().getSystem().getMetaKey())) {
+                if (keyCode == InputConstants.KEY_A && KeyboardHelper.isKeyDown(getApplication().getSystem().getMetaKey())) {
                     openStartMenu();
                     return null;
                 }

@@ -1,8 +1,8 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
-import com.ultreon.libs.commons.v0.Color;
 import com.ultreon.mods.lib.UltreonLib;
-import com.ultreon.mods.lib.client.devicetest.gui.McImage;
+import io.github.ultreon.devicesnext.api.Color;
+import io.github.ultreon.devicesnext.mineos.gui.McImage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.resources.Resource;

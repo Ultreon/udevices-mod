@@ -1,7 +1,7 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
-import com.ultreon.mods.lib.client.devicetest.exception.McNoPermissionException;
-import com.ultreon.mods.lib.client.devicetest.security.Permission;
+import io.github.ultreon.devicesnext.mineos.exception.McNoPermissionException;
+import io.github.ultreon.devicesnext.mineos.security.Permission;
 
 import java.util.HashMap;
 import java.util.Map;

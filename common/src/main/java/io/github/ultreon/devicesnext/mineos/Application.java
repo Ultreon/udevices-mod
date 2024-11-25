@@ -1,8 +1,8 @@
-package com.ultreon.mods.lib.client.devicetest;
+package io.github.ultreon.devicesnext.mineos;
 
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.ultreon.mods.lib.client.devicetest.exception.McAppNotFoundException;
-import com.ultreon.mods.lib.client.devicetest.exception.McSecurityException;
+import io.github.ultreon.devicesnext.api.OperatingSystem;
+import io.github.ultreon.devicesnext.mineos.exception.McAppNotFoundException;
+import io.github.ultreon.devicesnext.mineos.exception.McSecurityException;
 
 import java.util.Arrays;
 import java.util.Set;
@@ -65,7 +65,6 @@ public abstract class Application {
         return system;
     }
 
-    @CanIgnoreReturnValue
     public boolean spawnApplication(ApplicationId id, String... argv) throws McAppNotFoundException, McSecurityException {
         return this.system.spawn(this, id, argv);
     }
