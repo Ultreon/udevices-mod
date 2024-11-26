@@ -14,7 +14,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "io.github.ultreon.devicesnext.fabric.UDevicesModFabric"
+      "dev.ultreon.devicesnext.fabric.UDevicesModFabric"
     ]
   },
   "mixins": [
