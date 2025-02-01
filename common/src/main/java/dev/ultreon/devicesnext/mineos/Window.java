@@ -2,9 +2,9 @@ package dev.ultreon.devicesnext.mineos;
 
 import com.google.common.base.Preconditions;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.ultreon.mods.lib.UltreonLib;
+import dev.ultreon.devicesnext.UDevicesMod;
+import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.gui.McContainer;
-import com.ultreon.mods.lib.util.ScissorStack;
 import dev.ultreon.devicesnext.mineos.sizing.IntSize;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -20,7 +20,7 @@ import java.util.function.BooleanSupplier;
 
 @SuppressWarnings("SameParameterValue")
 public class Window extends McContainer {
-    private static final ResourceLocation SHADOW = UltreonLib.res("textures/gui/desktop/window_shadow.png");
+    private static final ResourceLocation SHADOW = UDevicesMod.res("textures/gui/desktop/window_shadow.png");
     private final List<Runnable> onClosed = Lists.newArrayList();
     private final List<BooleanSupplier> onClosing = Lists.newArrayList();
     final Application application;
@@ -61,7 +61,7 @@ public class Window extends McContainer {
 
         setBorderColor(0xff555555);
 
-        setBorder(new Insets(13, 1, 1, 1));
+        setBorder(new Insets(1, 13, 1, 1));
     }
 
     public void create() {
@@ -100,15 +100,12 @@ public class Window extends McContainer {
 
         int finalMouseX = mx;
         int finalMouseY = my;
-//        MoreGuiGraphics.subInstance(gfx,
-//                this.getX() + this.getBorder().left(), this.getY() + this.getBorder().top(),
-//                this.getWidth() - this.getBorder().right(),
-//                this.getHeight() - this.getBorder().bottom(),
-//                () ->
-                        this.renderBackground(gfx, finalMouseX, finalMouseY, partialTicks);
-//        );
 
-        super.render(gfx, mx, my, partialTicks);
+        ScissorStack.scissor(gfx, this.getX() + getBorder().left(), this.getY() + getBorder().top(), this.getWidth() - getBorder().left() - getBorder().right(), this.getHeight() - getBorder().top() - getBorder().bottom(), () -> {
+            this.renderBackground(gfx, finalMouseX, finalMouseY, partialTicks);
+            super.render(gfx, finalMouseX, finalMouseY, partialTicks);
+        });
+
     }
 
     void renderInternal(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
@@ -125,27 +122,27 @@ public class Window extends McContainer {
         var message = this.getMessage();
 
         var titleWidth = Math.min(this.getWidth() - 24, 150);
-        var titleHeight = this.getHeight() - getBorder().top() - 1;
+        var titleHeight = getBorder().top() - 1;
 
         int borderColor = this.getBorderColor();
         if (getDialog() != null) borderColor = wm.getWindowInactiveColor();
         if (this instanceof DialogWindow dialogWindow && this.dialog == null && dialogWindow.root != null && dialogWindow.root.isFocused())
             borderColor = wm.getWindowActiveColor();
 
-        if (!this.isUndecorated()) gfx.fill(this.getX(), this.getY(), this.getX() + this.getWidth() + getBorder().left() + getBorder().right(), this.getY() + this.getHeight() + getBorder().top() + getBorder().bottom(), borderColor);
-        if (!this.isTransparent()) gfx.fill(this.getX() + this.getBorder().left(), this.getY() + this.getBorder().top(), this.getX() + this.getWidth() + getBorder().left(), this.getY() + this.getHeight() + getBorder().top(), 0xff333333);
+        if (!this.isUndecorated())
+            gfx.fill(this.getX(), this.getY(), this.getX() + this.getWidth() + getBorder().left() + getBorder().right(), this.getY() + this.getHeight() + getBorder().top() + getBorder().bottom(), borderColor);
+        if (!this.isTransparent())
+            gfx.fill(this.getX() + this.getBorder().left(), this.getY() + this.getBorder().top(), this.getX() + this.getWidth() + getBorder().left(), this.getY() + this.getHeight() + getBorder().top(), 0xff333333);
 
         if (!this.isUndecorated()) {
             if (titleWidth > 2 && titleHeight > this.font.lineHeight) {
                 // Scissored title text/
-                ScissorStack.pushScissor(this.getX() + 1, this.getY() + 1, titleWidth, titleHeight);
-                {
+                ScissorStack.scissor(gfx, this.getX() + 1, this.getY() + 1, titleWidth, titleHeight, () -> {
                     if (this.font.width(message) > titleWidth)
-                        gfx.drawString(this.font, this.font.substrByWidth(message, titleWidth - 4).getString(), this.getX() + 3, this.getY() + 3, 0xffdddddd, false);
+                        gfx.drawString(this.font, this.font.substrByWidth(message, titleWidth - 4).getString(), 0 + 3, 0 + 3, 0xffdddddd, false);
                     else
-                        gfx.drawString(this.font, message, this.getX() + 3, this.getY() + 3, 0xffdddddd, false);
-                }
-                ScissorStack.popScissor();
+                        gfx.drawString(this.font, message, 0 + 3, 0 + 3, 0xffdddddd, false);
+                });
             }
 
             RenderSystem.enableBlend();
@@ -641,6 +638,13 @@ public class Window extends McContainer {
     }
 
     public void resize(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
 
+    @Override
+    public void setPosition(int x, int y) {
+        this.setX(x);
+        this.setY(y);
     }
 }

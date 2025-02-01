@@ -1,6 +1,8 @@
 package dev.ultreon.devicesnext.device;
 
 import dev.ultreon.devicesnext.device.hardware.HardwareComponent;
+import net.minecraft.world.entity.player.Player;
+import org.jetbrains.annotations.NotNull;
 import org.jnode.driver.virtual.VirtualDevice;
 
 import java.io.IOException;
@@ -33,5 +35,13 @@ public abstract class McDevice extends VirtualDevice {
         for (HardwareComponent c : this.components) {
             c.close();
         }
+    }
+
+    public abstract void open(@NotNull Player player);
+
+    public abstract void close(@NotNull Player player);
+
+    public void connectDisplay(@NotNull Player player) {
+
     }
 }

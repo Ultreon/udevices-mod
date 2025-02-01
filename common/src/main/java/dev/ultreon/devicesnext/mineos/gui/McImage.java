@@ -1,7 +1,7 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import com.ultreon.mods.lib.UltreonLib;
+import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.mineos.ResImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -227,12 +227,12 @@ public class McImage extends ResImage {
                 if (throwable instanceof CompletionException completionException) {
                     Throwable cause = completionException.getCause();
                     if (cause != null && cause.getCause() instanceof IOException ioException) {
-                        UltreonLib.LOGGER.warn("Failed to load image:" + this.getSource(), ioException);
+                        UDevicesMod.LOGGER.warn("Failed to load image:" + this.getSource(), ioException);
                         this.fail(ioException);
                     }
                 }
 
-                UltreonLib.LOGGER.warn("Failed to load image: " + this.getSource(), throwable);
+                UDevicesMod.LOGGER.warn("Failed to load image: " + this.getSource(), throwable);
                 return null;
             });
         }

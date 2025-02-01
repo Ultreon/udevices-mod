@@ -1,7 +1,6 @@
 package dev.ultreon.devicesnext.block;
 
 import dev.ultreon.devicesnext.block.entity.LaptopBlockEntity;
-import dev.ultreon.devicesnext.client.DeviceManager;
 import dev.ultreon.devicesnext.device.Laptop;
 import dev.ultreon.devicesnext.device.McDevice;
 import net.minecraft.core.BlockPos;
@@ -30,6 +29,13 @@ public class LaptopBlock extends Block implements EntityBlock {
     }
 
     @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+
+        builder.add(OPEN);
+    }
+
+    @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos blockPos, @NotNull BlockState blockState) {
         return new LaptopBlockEntity(blockPos, blockState);
     }
@@ -41,10 +47,26 @@ public class LaptopBlock extends Block implements EntityBlock {
             McDevice device = laptopBlockEntity.getDevice();
             if (device instanceof Laptop laptop) {
                 if (player.isShiftKeyDown()) {
-                    level.setBlock(blockPos, blockState.setValue(BlockStateProperties.OPEN, !blockState.getValue(BlockStateProperties.OPEN)), 3);
+                    toggleOpen(blockState, level, blockPos, player, device);
+                } else if (level.isClientSide && blockState.getValue(BlockStateProperties.OPEN)) {
+                    connectDisplay(player, device);
                 }
             }
         }
         return InteractionResult.SUCCESS;
+    }
+
+    private void connectDisplay(@NotNull Player player, McDevice device) {
+        device.connectDisplay(player);
+    }
+
+    private static void toggleOpen(@NotNull BlockState blockState, @NotNull Level level, @NotNull BlockPos blockPos, @NotNull Player player, McDevice device) {
+        boolean open = !blockState.getValue(BlockStateProperties.OPEN);
+        level.setBlock(blockPos, blockState.setValue(BlockStateProperties.OPEN, open), 3);
+        if (open) {
+            device.open(player);
+        } else {
+            device.close(player);
+        }
     }
 }

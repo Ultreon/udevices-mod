@@ -15,6 +15,7 @@ import dev.ultreon.devicesnext.server.ServerGPU;
 import dev.ultreon.devicesnext.util.Arguments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
@@ -44,6 +45,10 @@ public class UDevicesMod {
 
     public static void init() {
         EnvExecutor.runInEnv(Env.CLIENT, () -> UDevicesModClient::init);
+
+        BLOCKS.register();
+        ITEMS.register();
+        BLOCK_ENTITIES.register();
     }
 
     public static Path getDataPath() {
@@ -68,5 +73,9 @@ public class UDevicesMod {
         } catch (ApiNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static ResourceLocation res(String path) {
+        return new ResourceLocation(MOD_ID, path);
     }
 }

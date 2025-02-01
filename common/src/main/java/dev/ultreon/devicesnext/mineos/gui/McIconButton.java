@@ -2,7 +2,7 @@ package dev.ultreon.devicesnext.mineos.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ultreon.devicesnext.mineos.Icon;
-import com.ultreon.mods.lib.util.ScissorStack;
+import dev.ultreon.devicesnext.client.ScissorStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
@@ -25,13 +25,11 @@ public class McIconButton extends McComponent {
         if (isMouseOver(mouseX, mouseY)) background = 0xff666666;
         if (isHolding()) background = 0xff222222;
         gfx.fill(getX(), getY(), getX() + this.width, getY() + this.height, background);
-        ScissorStack.pushScissorTranslated(gfx, getX() + 1, getY() + 1, this.width - 2, this.height - 2);
-        {
+        ScissorStack.scissor(gfx, getX() + 1, getY() + 1, this.width - 2, this.height - 2, () -> {
             RenderSystem.enableBlend();
             this.icon.render(gfx, this.getX() + 2, this.getY() + 2);
             RenderSystem.disableBlend();
-        }
-        ScissorStack.popScissor();
+        });
     }
 
     public Icon getIcon() {

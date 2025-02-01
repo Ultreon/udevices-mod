@@ -1,5 +1,6 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
+import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.Insets;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -22,19 +23,21 @@ public abstract class McContainer extends McComponent {
 
     @Override
     public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
-        var innerX = getX() + getBorder().left();
-        var innerY = getY() + getBorder().top();
-//        MoreGuiGraphics.subInstance(gfx, innerX, innerY, getWidth() + getBorder().left, getHeight() + getBorder().top, () -> {
-            var translatedX = mouseX - getX() - this.getBorder().left();
-            var translatedY = mouseY - getY() - this.getBorder().top();
+        var innerX = 0 + getBorder().left();
+        var innerY = 0 + getBorder().top();
+        ScissorStack.scissor(gfx, innerX, innerY, getWidth() + getBorder().left(), getHeight() + getBorder().top(), () -> {
+            var translatedX = mouseX - 0 - this.getBorder().left();
+            var translatedY = mouseY - 0 - this.getBorder().top();
             renderContents(gfx, translatedX, translatedY, partialTicks);
-//        });
+        });
         super.render(gfx, mouseX, mouseY, partialTicks);
     }
 
     private void renderContents(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         for (var child : children) {
-            child.render(gfx, mouseX, mouseY, partialTicks);
+            ScissorStack.scissor(gfx, child.getX(), child.getY(), child.getWidth(), child.getHeight(), () -> {
+                child.render(gfx, mouseX, mouseY, partialTicks);
+            });
         }
     }
 

@@ -1,6 +1,6 @@
 package dev.ultreon.devicesnext.mineos;
 
-import com.ultreon.mods.lib.UltreonLib;
+import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.api.Color;
 import dev.ultreon.devicesnext.mineos.gui.McImage;
 import net.minecraft.client.gui.GuiGraphics;
@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.Optional;
 
 public class DesktopWindow extends Window {
     private final McImage wallpaper;
@@ -28,13 +29,16 @@ public class DesktopWindow extends Window {
         this.setUndecorated(true);
 
         assert this.minecraft != null;
-        Resource resource = this.minecraft.getResourceManager().getResource(UltreonLib.res("textures/wallpaper.png")).orElseThrow();
+        Optional<Resource> resource = this.minecraft.getResourceManager().getResource(UDevicesMod.res("textures/wallpaper.png"));
+        if (resource.isEmpty()) {
+            return;
+        }
         Path path = Path.of("./wallpaper.png");
         if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) {
-            try (InputStream stream = resource.open()) {
+            try (InputStream stream = resource.get().open()) {
                 Files.copy(stream, path);
             } catch (Exception e) {
-                UltreonLib.LOGGER.warn("Failed to extract wallpaper file:", e);
+                UDevicesMod.LOGGER.warn("Failed to extract wallpaper file:", e);
             }
         }
         this.loadWallpaper(path);

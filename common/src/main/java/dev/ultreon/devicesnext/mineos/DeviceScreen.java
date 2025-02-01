@@ -5,6 +5,7 @@ import com.ultreon.mods.lib.client.gui.screen.BaseScreen;
 import dev.ultreon.devicesnext.api.OperatingSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec2;
@@ -56,7 +57,7 @@ public class DeviceScreen extends BaseScreen {
             this.desktopX = 0;
             this.desktopY = 0;
             assert this.minecraft != null;
-            this.back.init(this.minecraft, this.width, this.height);
+            if (this.back != null) this.back.init(this.minecraft, this.width, this.height);
         } else {
             this.desktopX = (this.width - this.desktopWidth) / 2;
             this.desktopY = (this.height - this.desktopHeight) / 2;
@@ -180,6 +181,11 @@ public class DeviceScreen extends BaseScreen {
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
         return system.charTyped(codePoint, modifiers);
+    }
+
+    @Override
+    protected void updateNarrationState(NarrationElementOutput narrationElementOutput) {
+        // No-op
     }
 
     public void onShutdown() {

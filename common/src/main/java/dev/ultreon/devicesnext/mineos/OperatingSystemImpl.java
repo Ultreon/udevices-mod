@@ -1,12 +1,15 @@
 package dev.ultreon.devicesnext.mineos;
 
 import com.google.common.base.Preconditions;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.ultreon.mods.lib.UltreonLib;
+import dev.ultreon.devicesnext.UDevicesMod;
 import com.ultreon.mods.lib.util.KeyboardHelper;
 import dev.ultreon.devicesnext.api.Color;
 import dev.ultreon.devicesnext.api.OperatingSystem;
+import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.security.Permission;
 import dev.ultreon.devicesnext.mineos.security.SpawnApplicationPermission;
 import dev.ultreon.devicesnext.mineos.exception.McAccessDeniedException;
@@ -14,7 +17,6 @@ import dev.ultreon.devicesnext.mineos.exception.McAppNotFoundException;
 import dev.ultreon.devicesnext.mineos.exception.McNoPermissionException;
 import dev.ultreon.devicesnext.mineos.exception.McSecurityException;
 import dev.ultreon.devicesnext.mineos.sizing.IntSize;
-import com.ultreon.mods.lib.util.ScissorStack;
 import it.unimi.dsi.fastutil.objects.Reference2LongArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import net.minecraft.ChatFormatting;
@@ -27,6 +29,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
@@ -36,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.ultreon.mods.lib.util.KeyboardHelper.*;
 
 public final class OperatingSystemImpl extends WindowManager implements OperatingSystem {
+    public static final Gson GSON = new GsonBuilder().create();
     private static OperatingSystemImpl instance;
     private final Map<ApplicationId, ApplicationFactory<?>> applications = new HashMap<>();
     private final Map<Class<?>, ApplicationId> applicationTypes = new HashMap<>();
@@ -57,9 +62,14 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     private final Map<ShutdownToken, ShutdownTimer> shutdownTimers = new HashMap<>();
     @Nullable
     private ShutdownToken autoShutdownToken = null;
-    private final ScheduledExecutorService shutdownScheduler = Executors.newScheduledThreadPool(1);
+    private ScheduledExecutorService shutdownScheduler = Executors.newScheduledThreadPool(1);
     private List<Application> crashing = new ArrayList<>();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
+    private FileSystem fileSystem;
+    private FileDescriptorManager fdManager;
+    private LibStd stdLib;
+    private Disk disk;
+    private LibMineOS mineOSLib;
 
     public OperatingSystemImpl(DeviceScreen screen, int width, int height, ArrayList<Window> windows, DesktopApplication desktopApp) {
         this(screen, 0, 0, width, height, windows, desktopApp);
@@ -92,6 +102,14 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         }
     }
 
+    void _boot() {
+        this.disk = new Disk(UUID.nameUUIDFromBytes("player".getBytes()), UUID.nameUUIDFromBytes("kernel".getBytes()));
+        this.fileSystem = new FileSystem(disk);
+        this.fdManager = new FileDescriptorManager(this);
+        this.stdLib = new LibStd(this);
+        this.stdLib._init();
+    }
+
     @SuppressWarnings("unchecked")
     @SafeVarargs
     final <T extends Application> void registerApp(ApplicationId id, ApplicationFactory<T> factory, T... typeGetter) {
@@ -121,7 +139,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         }
 
         if (this.applicationCooldown.getLong(application.getId()) > System.currentTimeMillis()) {
-            UltreonLib.LOGGER.warn("Application cooldown for " + application.getId());
+            UDevicesMod.LOGGER.warn("Application cooldown for {}", application.getId());
             return false;
         }
 
@@ -130,6 +148,10 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             application._main(this, this, argv, this.pid++);
             return true;
         } catch (Exception e) {
+            if (application instanceof DesktopApplication) {
+                this._raiseHardError(e);
+                return false;
+            }
             this.crashApplication(application, e);
             return false;
         }
@@ -146,10 +168,6 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         this.annihilateApp(application);
         MutableComponent description = Component.literal((ChatFormatting.BOLD + "%s:\n" + ChatFormatting.WHITE + "  %s\n\n" + ChatFormatting.GRAY + "Check logs for more information").formatted(e.getClass().getSimpleName(), e.getMessage()));
         this.kernel.createWindow(MessageDialog.create(this.kernel, MessageDialog.Icons.ERROR, Component.literal("Application Crash"), description));
-
-        this.scheduler.schedule(() -> {
-            _spawn(applications.get(application.getId()).create(), application.getArgv());
-        }, 5, TimeUnit.SECONDS);
 
         this.crashing.remove(application);
     }
@@ -303,7 +321,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
 
         this.shutdownTime = System.currentTimeMillis() + 10000;
         this.bsod = new Bsod(throwable);
-        UltreonLib.LOGGER.error("System hard error:", throwable);
+        UDevicesMod.LOGGER.error("System hard error:", throwable);
     }
 
     @Override
@@ -311,37 +329,11 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         if (this.bsod != null) return false;
 
         try {
-            Iterator<KeyboardHook> iterator = this.keyboardHooks.iterator();
-            if (iterator.hasNext()) {
-                KeyboardHook current = iterator.next();
-                current = current.keyPressed(keyCode, scanCode, modifiers, current);
-                if (current == null) return true;
-                while (iterator.hasNext()) {
-                    current = current.keyPressed(keyCode, scanCode, modifiers, iterator.next());
-                    if (current == null) return true;
-                }
-            }
+            if (hookIfAvailable(keyCode, scanCode, modifiers)) return true;
 
             Window activeWindow = getActiveWindow();
             try {
-                if ((keyCode == InputConstants.KEY_Q && KeyboardHelper.isKeyDown(metaKey)) || (keyCode == InputConstants.KEY_F4 && KeyboardHelper.isAltDown())) {
-                    activeWindow.close();
-                    return true;
-                }
-                if (KeyboardHelper.isKeyDown(metaKey)) {
-                    switch (keyCode) {
-                        case InputConstants.KEY_UP -> {
-                            if (activeWindow.isMinimized()) activeWindow.restore();
-                            else activeWindow.maximize();
-                            return true;
-                        }
-                        case InputConstants.KEY_DOWN -> {
-                            if (activeWindow.isMaximized()) activeWindow.restore();
-                            else activeWindow.minimize();
-                            return true;
-                        }
-                    }
-                }
+                if (handleKey(keyCode, activeWindow)) return true;
             } catch (Exception e) {
                 this.crashApplication(activeWindow.application, e);
                 return false;
@@ -351,6 +343,42 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             this._raiseHardError(throwable);
             return true;
         }
+    }
+
+    private boolean handleKey(int keyCode, Window activeWindow) {
+        if ((keyCode == InputConstants.KEY_Q && KeyboardHelper.isKeyDown(metaKey)) || (keyCode == InputConstants.KEY_F4 && KeyboardHelper.isAltDown())) {
+            activeWindow.close();
+            return true;
+        }
+        if (!KeyboardHelper.isKeyDown(metaKey)) return false;
+
+        switch (keyCode) {
+            case InputConstants.KEY_UP -> {
+                if (activeWindow.isMinimized()) activeWindow.restore();
+                else activeWindow.maximize();
+                return true;
+            }
+            case InputConstants.KEY_DOWN -> {
+                if (activeWindow.isMaximized()) activeWindow.restore();
+                else activeWindow.minimize();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hookIfAvailable(int keyCode, int scanCode, int modifiers) {
+        Iterator<KeyboardHook> iterator = this.keyboardHooks.iterator();
+        if (iterator.hasNext()) {
+            KeyboardHook current = iterator.next();
+            current = current.keyPressed(keyCode, scanCode, modifiers, current);
+            if (current == null) return true;
+            while (iterator.hasNext()) {
+                current = current.keyPressed(keyCode, scanCode, modifiers, iterator.next());
+                if (current == null) return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -605,5 +633,38 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
 
     public void setHeight(int height) {
         this.height = height;
+    }
+
+    public AppConfig getAppConfig(ApplicationId id) {
+        int fd = this.stdLib.open("/apps/" + id.getGroup() + "/" + id.getModule() + ".json", 0);
+
+        try {
+            long l = this.stdLib.fstat(fd).st_size();
+            if (l > Integer.MAX_VALUE) throw new IOException("File too large");
+            ByteBuffer buffer = ByteBuffer.allocate((int) l);
+            this.stdLib.read(fd, buffer);
+            buffer.flip();
+
+            String json = new String(buffer.array());
+            return GSON.fromJson(json, AppConfig.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public FileDescriptorManager gerFdManager() {
+        return this.fdManager;
+    }
+
+    public FileSystem getFileSystem() {
+        return this.fileSystem;
+    }
+
+    public LibStd getStdLib() {
+        return this.stdLib;
+    }
+
+    public LibMineOS getMineOSLib() {
+        return this.mineOSLib;
     }
 }

@@ -3,7 +3,7 @@ package dev.ultreon.devicesnext.mineos;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Queues;
 import dev.ultreon.devicesnext.mineos.gui.McComponent;
-import com.ultreon.mods.lib.util.ScissorStack;
+import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.sizing.IntSize;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;

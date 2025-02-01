@@ -1,6 +1,7 @@
 package dev.ultreon.devicesnext.mineos;
 
-import com.ultreon.mods.lib.UltreonLib;
+import dev.ultreon.devicesnext.UDevicesMod;
+import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.gui.McLabel;
 import dev.ultreon.devicesnext.mineos.sizing.IntSize;
 import net.minecraft.client.gui.GuiGraphics;
@@ -31,14 +32,13 @@ public class MessageDialog extends DialogWindow {
         super.renderBackground(gfx, mouseX, mouseY, partialTicks);
 
         final Icon icon = this.icon;
-        if (icon != null)
+        if (icon != null) {
             icon.render(gfx, 4, 4, 16, 16);
+            description.setX(icon.width() + 8);
+        } else {
+            description.setX(4);
+        }
 
-        this.description.render(gfx, mouseX, mouseY, partialTicks);
-    }
-
-    @Override
-    protected @Nullable IntSize getForceSize() {
         int descLength = this.description.getWidth();
         var lines = this.description.getMessage().getString().replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
         int textHeight = this.description.getHeight();
@@ -47,7 +47,24 @@ public class MessageDialog extends DialogWindow {
         } else {
             this.description.setY(4);
         }
-        return new IntSize(descLength + 28, Math.max(textHeight + 8, 24));
+    }
+
+    @Override
+    protected @Nullable IntSize getForceSize() {
+        int descLength = this.description.getWidth();
+        var lines = this.description.getMessage().getString().replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+        int textHeight = this.description.getHeight();
+        if (icon != null) {
+            this.description.setX(icon.width() + 8);
+        } else {
+            this.description.setX(4);
+        }
+        if (textHeight < 16) {
+            this.description.setY(4 + (textHeight - 9) / 2);
+        } else {
+            this.description.setY(4);
+        }
+        return new IntSize(descLength + (icon != null ? icon.width() + 4 : 0) + 8, Math.max(this.description.getY() + this.description.getHeight() + 8, 24));
     }
 
     public Component getDescription() {
@@ -71,7 +88,7 @@ public class MessageDialog extends DialogWindow {
         private final ResourceLocation resource;
 
         Icons() {
-            this.resource = UltreonLib.res("textures/gui/device/messagebox/icon_" + name().toLowerCase(Locale.ROOT) + ".png");
+            this.resource = UDevicesMod.res("textures/gui/device/messagebox/icon_" + name().toLowerCase(Locale.ROOT) + ".png");
         }
 
         Icons(ResourceLocation resource) {

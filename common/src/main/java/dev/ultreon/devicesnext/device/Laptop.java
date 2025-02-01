@@ -7,7 +7,10 @@ import dev.ultreon.devicesnext.block.entity.LaptopBlockEntity;
 import dev.ultreon.devicesnext.client.ClientDeviceManager;
 import dev.ultreon.devicesnext.cpu.CPU;
 import dev.ultreon.devicesnext.device.hardware.Drive;
+import dev.ultreon.devicesnext.mineos.DeviceScreen;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -43,6 +46,36 @@ public class Laptop extends McDevice {
 
     public LaptopBlockEntity getBlockEntity() {
         return blockEntity;
+    }
+
+    @Override
+    public void open(@NotNull Player player) {
+        Level level = blockEntity.getLevel();
+        if (level == null) return;
+        if (level.isClientSide()) {
+            EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
+                ClientDeviceManager.get().registerDevice(this, blockEntity);
+            });
+        }
+    }
+
+    @Override
+    public void close(@NotNull Player player) {
+        Level level = blockEntity.getLevel();
+        if (level == null) return;
+        if (level.isClientSide()) {
+            EnvExecutor.runInEnv(Env.CLIENT, () -> () -> {
+                ClientDeviceManager.get().unregisterDevice(this, blockEntity);
+            });
+        }
+    }
+
+    @Override
+    public void connectDisplay(@NotNull Player player) {
+        super.connectDisplay(player);
+
+        DeviceScreen screen = new DeviceScreen(new DeviceScreen.LaunchOptions().fullscreen());
+        screen.open();
     }
 
     public enum Model {

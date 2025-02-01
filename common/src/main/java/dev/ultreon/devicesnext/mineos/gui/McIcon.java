@@ -64,15 +64,15 @@ public class McIcon extends McImage {
     @Override
     public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         ResourceLocation resource = getResource();
-        gfx.fill(this.getX(), this.getY(), this.getX() + this.getWidth(), this.getY() + this.getHeight(), 0xff555555);
-        gfx.fill(this.getX() + 1, this.getY() + 1, this.getX() + this.getWidth() - 1, this.getY() + this.getHeight() - 1, 0xff333333);
+        gfx.fill(0, 0, this.getWidth(), this.getHeight(), 0xff555555);
+        gfx.fill(1, 1, this.getWidth() - 1, this.getHeight() - 1, 0xff333333);
 
         if (resource == null) {
             // Resource not loaded.
-            McImage.drawLoadingIcon(gfx, getX() + getWidth() / 2, getY() + getHeight() / 2);
+            McImage.drawLoadingIcon(gfx, getWidth() / 2, getHeight() / 2);
             return;
         }
 
-        gfx.blit(resource, getX(), getY(), getWidth(), getHeight(), 0, 0, textureWidth(), textureHeight(), textureWidth(), textureHeight());
+        gfx.blit(resource, 0, 0, getWidth(), getHeight(), 0, 0, textureWidth(), textureHeight(), textureWidth(), textureHeight());
     }
 }

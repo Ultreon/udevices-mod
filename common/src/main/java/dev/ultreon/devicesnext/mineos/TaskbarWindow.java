@@ -2,7 +2,7 @@ package dev.ultreon.devicesnext.mineos;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.ultreon.mods.lib.UltreonLib;
+import dev.ultreon.devicesnext.UDevicesMod;
 import com.ultreon.mods.lib.util.KeyboardHelper;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -25,7 +25,7 @@ public final class TaskbarWindow extends Window {
         this.size = size;
 
         this.startButton = this.add(new StartButton(this, 0, 0, this.size, this.size, Component.literal("Start Menu")));
-        this.startButton.loadIcon(UltreonLib.res("textures/gui/device/taskbar/icon.png"), 16, 16);
+        this.startButton.loadIcon(UDevicesMod.res("textures/gui/device/taskbar/icon.png"), 16, 16);
         this.startButton.setCallback(this::openStartMenu);
     }
 

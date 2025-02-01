@@ -44,6 +44,10 @@ public abstract class Application {
         this.pid = pid;
     }
 
+    public final boolean isService() {
+        return system.getAppConfig(id).runAsService;
+    }
+
     public boolean isOpenOnlyOne() {
         return false;
     }
@@ -88,5 +92,13 @@ public abstract class Application {
 
     public final boolean isSame(Application application) {
         return this.id.equals(application.id);
+    }
+
+    public LibStd getStdLib() {
+        return system.getStdLib();
+    }
+
+    public LibMineOS getMineOSLib() {
+        return system.getMineOSLib();
     }
 }

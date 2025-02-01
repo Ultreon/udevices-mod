@@ -1,7 +1,7 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
+import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.Icon;
-import com.ultreon.mods.lib.util.ScissorStack;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
@@ -43,17 +43,15 @@ public class McButton extends McComponent {
         var background = 0xff444444;
         if (isMouseOver(mouseX, mouseY)) background = 0xff666666;
         if (isHolding()) background = 0xff222222;
-        gfx.fill(getX(), getY(), getX() + width, getY() + height, background);
-        ScissorStack.pushScissorTranslated(gfx, getX() + 1, getY() + 1, width - 2, height - 2);
-        {
+        gfx.fill(0, 0, width, height, background);
+        ScissorStack.scissor(gfx, 1, 1, width - 2, height - 2, () -> {
             if (this.icon != null) {
-                this.icon.render(gfx, getX() + 2, getY() + 2, 11, 11);
-                renderScrollingString(gfx, font, this.getMessage(), getX() + 14, getY() + 1, this.getWidth() - 15, this.getHeight() - 2, 0xffffffff);
+                this.icon.render(gfx, 1, 1, 11, 11);
+                renderScrollingString(gfx, font, this.getMessage(), 14, 1, this.getWidth() - 15, this.getHeight() - 2, 0xffffffff);
             } else {
                 this.renderScrollingString(gfx, font, 1, 0xffffffff);
             }
-        }
-        ScissorStack.popScissor();
+        });
     }
 
     @Override

@@ -1,6 +1,6 @@
 package dev.ultreon.devicesnext.mineos;
 
-import com.ultreon.mods.lib.UltreonLib;
+import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.mineos.exception.McAppNotFoundException;
 import dev.ultreon.devicesnext.mineos.exception.McNoPermissionException;
 import dev.ultreon.devicesnext.mineos.exception.McSecurityException;
@@ -41,6 +41,9 @@ public abstract class StartMenuWindow extends Window {
         try {
             int listY = 0;
             for (ApplicationId id : this.application.getSystem().getApplications(this.application)) {
+                if (this.application.getMineOSLib().getAppConfig(id).runAsService) {
+                    continue;
+                }
                 McButton add = list.add(new McButton(0, listY, this.width, 15, id.getName()));
                 add.addClickHandler(button -> {
                     try {
@@ -81,7 +84,7 @@ public abstract class StartMenuWindow extends Window {
         private final ResourceLocation resource;
 
         private Icons() {
-            this.resource = UltreonLib.res("textures/gui/device/start_menu/icon_" + name().toLowerCase(Locale.ROOT) + ".png");
+            this.resource = UDevicesMod.res("textures/gui/device/start_menu/icon_" + name().toLowerCase(Locale.ROOT) + ".png");
         }
 
         @Override
