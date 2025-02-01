@@ -1,0 +1,10 @@
+{
+  "name": "Notepad",
+  "id": "notepad",
+  "icon": "/apps/@ultreon/mineos/notepad/icon.png",
+  "executablePath": "/apps/@ultreon/mineos/notepad.js",
+  "appId": "dev.ultreon:notepad",
+  "onlyOpenOne": false,
+  "runAsService": false,
+  "needsAdmin": false
+}

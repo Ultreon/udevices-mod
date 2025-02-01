@@ -230,6 +230,7 @@ public class FSFile implements FSNode {
         }
         buffer.flip();
         disk.writeBlock((int) Math.floorDiv(dataAddress, Disk.BLOCK_SIZE), buffer, 0, buffer.capacity());
+        fs.flush();
     }
 
     private void allocate(long amount) {

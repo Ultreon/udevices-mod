@@ -18,9 +18,9 @@ public class FileSystemIoException extends RuntimeException {
         this.e = e;
     }
 
-    public FileSystemIoException(String outOfFileDescriptors) {
-        super(outOfFileDescriptors);
-        this.e = new IOException(outOfFileDescriptors);
+    public FileSystemIoException(String message) {
+        super(message);
+        this.e = new IOException(message);
     }
 
     @Override

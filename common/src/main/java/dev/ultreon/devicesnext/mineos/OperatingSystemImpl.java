@@ -1,25 +1,39 @@
 package dev.ultreon.devicesnext.mineos;
 
+import com.caoccao.javet.enums.JSRuntimeType;
+import com.caoccao.javet.exceptions.JavetError;
+import com.caoccao.javet.exceptions.JavetException;
+import com.caoccao.javet.interop.V8Host;
+import com.caoccao.javet.interop.V8Runtime;
+import com.caoccao.javet.interop.options.V8RuntimeOptions;
+import com.caoccao.javet.javenode.JNEventLoop;
+import com.caoccao.javet.javenode.JNEventLoopOptions;
+import com.caoccao.javet.values.V8Value;
+import com.caoccao.javet.values.reference.V8Module;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
-import dev.ultreon.devicesnext.UDevicesMod;
 import com.ultreon.mods.lib.util.KeyboardHelper;
+import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.api.Color;
 import dev.ultreon.devicesnext.api.OperatingSystem;
 import dev.ultreon.devicesnext.client.ScissorStack;
-import dev.ultreon.devicesnext.mineos.security.Permission;
-import dev.ultreon.devicesnext.mineos.security.SpawnApplicationPermission;
+import dev.ultreon.devicesnext.device.hardware.FSDirectory;
+import dev.ultreon.devicesnext.device.hardware.FSFile;
+import dev.ultreon.devicesnext.device.hardware.FSNode;
 import dev.ultreon.devicesnext.mineos.exception.McAccessDeniedException;
 import dev.ultreon.devicesnext.mineos.exception.McAppNotFoundException;
 import dev.ultreon.devicesnext.mineos.exception.McNoPermissionException;
 import dev.ultreon.devicesnext.mineos.exception.McSecurityException;
+import dev.ultreon.devicesnext.mineos.security.Permission;
+import dev.ultreon.devicesnext.mineos.security.SpawnApplicationPermission;
 import dev.ultreon.devicesnext.mineos.sizing.IntSize;
 import it.unimi.dsi.fastutil.objects.Reference2LongArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -33,11 +47,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.ultreon.mods.lib.util.KeyboardHelper.*;
+import static com.ultreon.mods.lib.util.KeyboardHelper.Modifier;
 
 public final class OperatingSystemImpl extends WindowManager implements OperatingSystem {
     public static final Gson GSON = new GsonBuilder().create();
@@ -70,6 +83,8 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     private LibStd stdLib;
     private Disk disk;
     private LibMineOS mineOSLib;
+    private V8Host host;
+    private V8Runtime runtime;
 
     public OperatingSystemImpl(DeviceScreen screen, int width, int height, ArrayList<Window> windows, DesktopApplication desktopApp) {
         this(screen, 0, 0, width, height, windows, desktopApp);
@@ -95,21 +110,127 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         this.mineOSLib = new LibMineOS(this);
         this.mineOSLib._init();
 
+        this.host = V8Host.getInstance(JSRuntimeType.Node);
+
+        if (!this.fileSystem.isInitialized()) {
+            this.fileSystem.initialize();
+        }
+
+        V8RuntimeOptions options = new V8RuntimeOptions();
+        options.setGlobalName("global");
+        try {
+            this.runtime = this.host.createV8Runtime(options);
+        } catch (JavetException e) {
+            this._raiseHardError(e);
+            return;
+        }
+
+        runtime.setV8ModuleResolver((v8Runtime, resourceName, v8ModuleReferrer) -> {
+            String resource = this.mineOSLib.readModule(resourceName);
+
+            if (resource == null) {
+                throw new JavetException(JavetError.ModuleNotFound, new IOException("Module not found: " + resourceName));
+            }
+
+            return v8Runtime.getExecutor(resource).setResourceName(resourceName).setModule(true).compileV8Module();
+
+        });
+
+        this.loadApps(runtime, new JNEventLoop(runtime, Util.make(new JNEventLoopOptions(), jnEventLoopOptions -> {
+            jnEventLoopOptions.setGcBeforeClosing(true);
+        })));
+
         try {
             // Register apps and spawn kernel
             this._spawn(this.kernel, new String[]{});
             this.registerApp(this.kernel.getId(), () -> this.kernel);
             this.registerApp(DesktopApplication.id(), () -> desktopApp);
 
+            // Register setup
+            ApplicationId setupAppId = new ApplicationId("dev.ultreon:setup");
+            FirstTimeSetupApplication setupApp = new FirstTimeSetupApplication(this, setupAppId);
+            this.registerApp(setupAppId, () -> setupApp);
+
             // Setup permissions
             this.permissionManager.grantPermission(DesktopApplication.id(), Permission.SHUTDOWN);
             this.permissionManager.grantPermission(DesktopApplication.id(), Permission.LIST_APPLICATIONS);
             this.permissionManager.grantPermission(DesktopApplication.id(), Permission.SPAWN_APPLICATIONS);
 
-            this._spawn(desktopApp, new String[0]);
+            if (!this.fileSystem.exists(Path.of("/data/installed"))) {
+                this._spawn(setupApp, new String[0]);
+            } else {
+                this._spawn(desktopApp, new String[0]);
+            }
 
             this.desktop = desktopApp.getDesktop();
             this.taskbar = desktopApp.getTaskbar();
+        } catch (Throwable throwable) {
+            this._raiseHardError(throwable);
+        }
+    }
+
+    @SuppressWarnings("t")
+    private void loadApps(V8Runtime runtime, JNEventLoop eventLoop) {
+        try {
+            FSNode fsNode = this.fileSystem.get(Path.of("/data/appcfg/"));
+
+            if (fsNode == null || !fsNode.isDirectory()) {
+                return;
+            }
+
+            FSDirectory fsDirectory = (FSDirectory) fsNode;
+
+            for (FSNode file : fsDirectory.list()) {
+                if (file.isDirectory()) {
+                    continue;
+                }
+
+                FSFile fsFile = (FSFile) file;
+
+                String name = fsFile.getName();
+                if (!name.endsWith(".json")) {
+                    continue;
+                }
+
+                int open = stdLib.open("/data/appcfg/" + name, 0);
+
+                if (open == -1) {
+                    continue;
+                }
+
+                ByteBuffer buffer = ByteBuffer.allocate((int) fsFile.getLength());
+                stdLib.read(open, buffer);
+                buffer.flip();
+
+                AppConfig appConfig = GSON.fromJson(new String(buffer.array()), AppConfig.class);
+
+                if (appConfig == null) {
+                    continue;
+                }
+
+                this.<Application>registerApp(new ApplicationId(appConfig.appId), () -> {
+                    try {
+                        V8Module v8Module = runtime.getExecutor("""
+                                import Application from "%s"
+                                
+                                export default function() {
+                                    return new Application();
+                                }
+                                """).setResourceName("/data/appcfg/" + name).setModule(true).compileV8Module();
+
+                        V8Value namespace = v8Module.getNamespace();
+
+                        return new Application(appConfig.appId) {
+                            @Override
+                            public void create() {
+                                // TODO
+                            }
+                        };
+                    } catch (JavetException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
         } catch (Throwable throwable) {
             this._raiseHardError(throwable);
         }
@@ -194,7 +315,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
 
     boolean spawn(Application executor, ApplicationId id, String... argv) throws McSecurityException, McAppNotFoundException {
         if (!this.permissionManager.hasPermission(executor, Permission.SPAWN_APPLICATIONS) &&
-                !this.permissionManager.hasPermission(executor, new SpawnApplicationPermission(id))) {
+            !this.permissionManager.hasPermission(executor, new SpawnApplicationPermission(id))) {
             throw new McNoPermissionException(executor, new SpawnApplicationPermission(id));
         }
 
@@ -428,7 +549,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             gfx.pose().scale(2, 2, 1);
             gfx.drawString(this.font, ":(", 3, 3, 0xffffffff, false);
             gfx.pose().popPose();
-            gfx.drawString(this.font, ChatFormatting.BOLD + "Your Minecraft ran into a problem and needs to restart.", 6, 25, 0xffffffff, false);
+            gfx.drawString(this.font, ChatFormatting.BOLD + "Your in-game system ran into a problem and needs to restart.", 6, 25, 0xffffffff, false);
             gfx.drawString(this.font, "Shutting down in: " + (Mth.ceil(millisRemaining / 1000f)), 20, 10, 0xb0ffffff, false);
             AtomicInteger i = new AtomicInteger(0);
             ExceptionUtils.getStackTrace(this.bsod.throwable()).lines().forEachOrdered(s -> {
@@ -440,13 +561,13 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             return;
         }
 
-        if (this.windows.isEmpty() && !this.shuttingDown) {
-            this.autoShutdownToken = new ShutdownToken();
-            this._delayShutdown(this.autoShutdownToken, new ShutdownTimer(5000));
-            return;
-        } else if (this.autoShutdownToken != null) {
-            this.cancelShutdown(this.autoShutdownToken);
-        }
+//        if (this.windows.isEmpty() && !this.shuttingDown) {
+//            this.autoShutdownToken = new ShutdownToken();
+//            this._delayShutdown(this.autoShutdownToken, new ShutdownTimer(5000));
+//            return;
+//        } else if (this.autoShutdownToken != null) {
+//            this.cancelShutdown(this.autoShutdownToken);
+//        }
 
         try {
             this.openApps.forEach(Application::update);

@@ -1,7 +1,9 @@
 package dev.ultreon.devicesnext.mineos;
 
+import dev.ultreon.devicesnext.device.hardware.FSDirectory;
 import dev.ultreon.devicesnext.device.hardware.FSFile;
 import dev.ultreon.devicesnext.device.hardware.FSNode;
+import dev.ultreon.devicesnext.device.hardware.FSRoot;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -9,6 +11,10 @@ import java.nio.file.Path;
 public class LibStd implements SystemLibrary {
     private final OperatingSystemImpl operatingSystem;
     private final FileDescriptorManager fdManager;
+    public static final int O_CREAT = 0x4000;
+    public static final int O_RDONLY = 0x0000;
+    public static final int O_WRONLY = 0x0001;
+    public static final int O_TRUNC = 0x2000;
     private String error = null;
     private int errno = 0;
 
@@ -30,7 +36,25 @@ public class LibStd implements SystemLibrary {
     }
 
     int open(String path, int flags) {
-        FSNode fsNode = operatingSystem.getFileSystem().get(Path.of(path));
+        Path pathObj = Path.of(path);
+        if ((flags & O_CREAT) == O_CREAT) {
+            FSNode fsNode = operatingSystem.getFileSystem().get(pathObj.getParent());
+            if (fsNode == null) {
+                this.error = "Directory not found: " + pathObj.getParent();
+                this.errno = 2;
+                return -1;
+            }
+
+            if (!(fsNode instanceof FSDirectory fsDirectory)) {
+                this.error = "Not a directory: " + pathObj.getParent();
+                this.errno = 2;
+                return -1;
+            }
+
+            fsDirectory.createFile(pathObj.getFileName().toString());
+        }
+
+        FSNode fsNode = operatingSystem.getFileSystem().get(pathObj);
         if (fsNode == null) {
             this.error = "File not found: " + path;
             this.errno = 2;
@@ -41,7 +65,7 @@ public class LibStd implements SystemLibrary {
             this.errno = 2;
             return -1;
         }
-        return operatingSystem.gerFdManager().open(path, fsFile);
+        return operatingSystem.gerFdManager().open(path, fsFile, flags);
     }
 
     void close(int fd) {
@@ -54,6 +78,8 @@ public class LibStd implements SystemLibrary {
         if (fileDescriptor == null) {
             return;
         }
+
+        fileDescriptor.getFile().flush();
         operatingSystem.gerFdManager().free(fileDescriptor);
     }
 
@@ -112,8 +138,31 @@ public class LibStd implements SystemLibrary {
     }
 
     int mkdir(String path, int mode) {
-        // TODO
-        return -1;
+        Path pathObj = Path.of(path);
+        FSNode parent = operatingSystem.getFileSystem().get(pathObj.getParent());
+        if (parent == null) {
+            this.error = "Directory not found: " + pathObj.getParent();
+            this.errno = 2;
+            return -1;
+        }
+        if (!(parent instanceof FSDirectory fsDirectory)) {
+            this.error = "Not a directory: " + pathObj.getParent();
+            this.errno = 2;
+            return -1;
+        }
+        if (!(fsDirectory instanceof FSRoot)) fsDirectory.open();
+        fsDirectory.createDirectory(pathObj.getFileName().toString());
+        FSDirectory child = (FSDirectory) fsDirectory.getChild(pathObj.getFileName().toString());
+        child.flush();
+        child.close();
+        fsDirectory.flush();
+        if (!(fsDirectory instanceof FSRoot)) fsDirectory.close();
+
+        if (!(fsDirectory instanceof FSRoot)) fsDirectory.open();
+        FSNode child1 = fsDirectory.getChild(pathObj.getFileName().toString());
+        if (child1 == null) throw new FileSystemIoException("Failed to write directory to disk!");
+        if (!(fsDirectory instanceof FSRoot)) fsDirectory.close();
+        return 0;
     }
 
     int rmdir(String path) {
@@ -129,6 +178,14 @@ public class LibStd implements SystemLibrary {
     String getcwd() {
         // TODO
         return null;
+    }
+
+    public String strerror() {
+        return error;
+    }
+
+    public int errno() {
+        return errno;
     }
 
     public record FStat(long st_size, long st_mode, long st_atime, long st_mtime, long st_ctime) {

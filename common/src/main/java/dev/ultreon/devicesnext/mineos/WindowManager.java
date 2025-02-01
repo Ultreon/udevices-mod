@@ -235,14 +235,17 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
     synchronized void moveToForeground(Window window) {
         synchronized (wmLock) {
             try {
-                if (!this.windows.contains(window)) throw new IllegalArgumentException("Window doesn't exist.");
+                if (!this.windows.contains(window)) {
+                    system._raiseHardError(new IllegalArgumentException("Window does not exist."));
+                    return;
+                }
 
                 var oldWindow = this.activeWindow;
                 if (oldWindow != null) {
                     oldWindow.handleSetInactive();
                 }
             } catch (Exception e) {
-                crashApplication(this.pressedWindow.application, e);
+                crashApplication(window.application, e);
                 return;
             }
 

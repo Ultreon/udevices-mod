@@ -43,8 +43,8 @@ public class DeviceScreen extends BaseScreen {
         this.desktopY = (this.height - this.desktopHeight) / 2;
         this.desktopFullscreen = options.fullscreen;
 
+        this.system = new OperatingSystemImpl(this, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, Lists.newArrayList(options.windows), new DesktopApplication());
         try {
-            this.system = new OperatingSystemImpl(this, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, Lists.newArrayList(options.windows), new DesktopApplication());
             this.system.border = new Insets(0, 0, 20, 0);
             this.kernel = this.system.kernel;
 

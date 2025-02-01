@@ -31,6 +31,8 @@ public class FileSystem {
     }
 
     public void initialize() {
+        this.flush();
+
         this.fsHeader.initialize();
         this.root = new FSRoot(disk, this);
         this.root.setLastAccessed(System.nanoTime());
@@ -41,6 +43,14 @@ public class FileSystem {
     }
 
     public FSNode get(Path path) {
+        if (this.root == null) {
+            throw new IllegalStateException("File system is not initialized");
+        }
+
+        if (path == Path.of("/")) {
+            return this.root;
+        }
+
         if (!path.isAbsolute()) {
             throw new IllegalArgumentException("Path must be absolute");
         }
@@ -48,11 +58,11 @@ public class FileSystem {
         FSNode node = this.root;
         for (int i = 0; i < path.getNameCount(); i++) {
             String name = path.getName(i).toString();
+            node.open();
+            node = node.getChild(name);
             if (node == null) {
                 return null;
             }
-            node.open();
-            node = node.getChild(name);
             node.close();
         }
 
@@ -73,7 +83,7 @@ public class FileSystem {
     }
 
     public int allocateBlock() {
-        int i = allocatedBlocks.nextClearBit(0);
+        int i = allocatedBlocks.nextClearBit(1);
         if (i == -1) {
             throw new FileSystemIoException("Out of disk space");
         }
@@ -88,17 +98,27 @@ public class FileSystem {
     public void flush() {
         long length = disk.length();
         long endAddress = Math.floorDiv(length, Disk.BLOCK_SIZE) * Disk.BLOCK_SIZE;
-        long startAddress = (endAddress - allocatedBlocks.length()) / Byte.SIZE;
+        long startAddress = (endAddress - allocatedBlocks.length() / Byte.SIZE);
         startAddress = Math.floorDiv(startAddress, Disk.BLOCK_SIZE) * Disk.BLOCK_SIZE;
 
-        ByteBuffer buffer = ByteBuffer.allocate(Disk.BLOCK_SIZE);
+        ByteBuffer buffer = ByteBuffer.allocate((int) Math.floorDiv(disk.length(), Disk.BLOCK_SIZE));
+        buffer.flip();
+        buffer.position(0);
+        buffer.limit((int) Math.floorDiv(disk.length(), Disk.BLOCK_SIZE));
         long[] longArray = allocatedBlocks.toLongArray();
         for (long i = startAddress; i < endAddress; i += Disk.BLOCK_SIZE) {
             for (int j = 0; j < Disk.BLOCK_SIZE / Long.BYTES; j++) {
-                buffer.putLong(longArray[(int) (i / Long.BYTES) + j]);
+                int block = (int) ((i - startAddress) / Disk.BLOCK_SIZE / Long.BYTES) + j;
+                if (block >= longArray.length) {
+                    buffer.putLong(0L);
+                } else {
+                    buffer.putLong(longArray[block]);
+                }
             }
             disk.writeBlock((int) Math.floorDiv(i, Disk.BLOCK_SIZE), buffer, 0, Disk.BLOCK_SIZE);
         }
+
+        disk.flush();
     }
 
     private void loadAllocations() {
@@ -120,6 +140,10 @@ public class FileSystem {
         }
 
         allocatedBlocks = BitSet.valueOf(longArray);
+    }
+
+    public boolean exists(Path of) {
+        return get(of) != null;
     }
 
     private static class FSHeader {
@@ -145,6 +169,7 @@ public class FileSystem {
         }
 
         public void initialize() {
+            int i = fs.allocateBlock();
             ByteBuffer buffer = ByteBuffer.allocate(Disk.BLOCK_SIZE);
             buffer.put("MineOSFS".getBytes());
             buffer.flip();

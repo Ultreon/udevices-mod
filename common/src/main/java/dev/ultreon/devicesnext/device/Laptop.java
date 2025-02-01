@@ -8,6 +8,7 @@ import dev.ultreon.devicesnext.client.ClientDeviceManager;
 import dev.ultreon.devicesnext.cpu.CPU;
 import dev.ultreon.devicesnext.device.hardware.Drive;
 import dev.ultreon.devicesnext.mineos.DeviceScreen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
@@ -74,7 +75,7 @@ public class Laptop extends McDevice {
     public void connectDisplay(@NotNull Player player) {
         super.connectDisplay(player);
 
-        DeviceScreen screen = new DeviceScreen(new DeviceScreen.LaunchOptions());
+        DeviceScreen screen = new DeviceScreen(new DeviceScreen.LaunchOptions().fullscreen().title(Component.literal("MineOS")));
         screen.open();
     }
 

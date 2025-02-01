@@ -34,6 +34,8 @@ class FileDescriptorManager {
             int index = descriptor.fd();
             this.descriptors[index] = null;
             this.inUse.clear(index);
+
+            descriptor.getFile().close();
         }
     }
 
@@ -49,14 +51,15 @@ class FileDescriptorManager {
         }
     }
 
-    public int open(String path, FSFile fsFile) {
+    public int open(String path, FSFile fsFile, int flags) {
         synchronized (this) {
+            fsFile.open();
             int index = this.inUse.nextClearBit(0);
             if (index == -1) {
                 throw new FileSystemIoException("Out of file descriptors");
             }
             this.inUse.set(index);
-            this.descriptors[index].open(path, fsFile);
+            this.descriptors[index].open(path, fsFile, flags);
             return index;
         }
     }

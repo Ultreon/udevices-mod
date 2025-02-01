@@ -3,9 +3,11 @@ package dev.ultreon.devicesnext.device.hardware;
 import dev.ultreon.devicesnext.mineos.Disk;
 import dev.ultreon.devicesnext.mineos.FileSystem;
 
+import static dev.ultreon.devicesnext.mineos.Disk.BLOCK_SIZE;
+
 public class FSRoot extends FSDirectory {
     public FSRoot(Disk disk, FileSystem fs) {
-        super(disk, fs, null, 1L);
+        super(disk, fs, null, (long) fs.allocateBlock() * BLOCK_SIZE);
     }
 
     @Override

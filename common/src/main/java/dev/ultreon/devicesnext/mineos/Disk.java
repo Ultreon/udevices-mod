@@ -89,6 +89,8 @@ public class Disk {
             try {
                 this.io.seek(block * BLOCK_SIZE);
                 byte[] buf = new byte[BLOCK_SIZE];
+                buffer.limit(BLOCK_SIZE);
+                buffer.position(0);
                 this.io.read(buf);
                 buffer.put(buf);
             } catch (IOException e) {
@@ -132,8 +134,10 @@ public class Disk {
 
             try {
                 this.io.seek((long) block * BLOCK_SIZE + offset);
+                buffer.limit(length);
+                buffer.position(0);
                 byte[] buf = new byte[length];
-                buffer.get(buf);
+                buffer.get(buf, 0, buf.length);
                 this.io.write(buf);
             } catch (IOException e) {
                 throw new FileSystemIoException("Failed to write block", e);
@@ -150,6 +154,19 @@ public class Disk {
                 return this.io.length() / BLOCK_SIZE;
             } catch (IOException e) {
                 throw new FileSystemIoException("Failed to get disk length", e);
+            }
+        }
+    }
+
+    public void flush() {
+        synchronized (this) {
+            if (!this.opened) {
+                throw new FileSystemIoException("Disk is not opened");
+            }
+            try {
+                this.io.getFD().sync();
+            } catch (IOException e) {
+                throw new FileSystemIoException("Failed to flush disk", e);
             }
         }
     }

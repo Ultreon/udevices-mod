@@ -5,11 +5,15 @@ import dev.ultreon.devicesnext.device.hardware.FSFile;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import static dev.ultreon.devicesnext.mineos.LibStd.O_RDONLY;
+import static dev.ultreon.devicesnext.mineos.LibStd.O_WRONLY;
+
 public final class FileDescriptor {
     private final int fd;
     private String path;
     private FSFile file;
     private long off;
+    private int flags;
 
     public FileDescriptor(
             int fd,
@@ -33,9 +37,11 @@ public final class FileDescriptor {
         return file;
     }
 
-    public void open(String path, FSFile file) {
+    public void open(String path, FSFile file, int flags) {
         this.path = path;
         this.file = file;
+        this.off = 0;
+        this.flags = flags;
     }
 
     @Override
@@ -62,14 +68,33 @@ public final class FileDescriptor {
     }
 
     public void read(ByteBuffer buffer) {
+        if ((flags & O_WRONLY) == O_WRONLY) {
+            throw new FileSystemIoException("File is write-only");
+        }
         file.read(off, buffer);
     }
 
     public void write(ByteBuffer buffer) {
+        if ((flags & O_RDONLY) == O_RDONLY) {
+            throw new FileSystemIoException("File is read-only");
+        }
+
         file.write(off, buffer);
     }
 
     public long tell() {
-        return (long) off;
+        return off;
+    }
+
+    public int getFlags() {
+        return flags;
+    }
+
+    public void truncate(long size) {
+        file.setLength(size);
+    }
+
+    public void seek(long pos) {
+        off = pos;
     }
 }
