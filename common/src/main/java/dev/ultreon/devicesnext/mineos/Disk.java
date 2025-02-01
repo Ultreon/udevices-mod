@@ -30,11 +30,18 @@ public class Disk {
                 this.io = new RandomAccessFile(owner + "/" + serial + ".img", "rw");
             } catch (FileNotFoundException e) {
                 try {
-                    boolean newFile = new File(owner + "/" + serial + ".img").createNewFile();
+                    File file = new File(owner + "/" + serial + ".img");
+                    if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
+                        throw new FileSystemIoException("Failed to initialize disk");
+                    }
+                    boolean newFile = file.createNewFile();
                     if (!newFile) {
-                        throw new FileSystemIoException("Failed to create disk file");
+                        throw new FileSystemIoException("Failed to initialize disk");
                     }
                     this.io = new RandomAccessFile(owner + "/" + serial + ".img", "rw");
+                    this.io.setLength(16 * 1024 * 1024);
+                    this.io.seek(0);
+                    this.io.getFD().sync();
                 } catch (IOException ex) {
                     throw new FileSystemIoException("Failed to initialize disk", ex);
                 }

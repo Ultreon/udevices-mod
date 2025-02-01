@@ -41,9 +41,8 @@ public abstract class StartMenuWindow extends Window {
         try {
             int listY = 0;
             for (ApplicationId id : this.application.getSystem().getApplications(this.application)) {
-                if (this.application.getMineOSLib().getAppConfig(id).runAsService) {
-                    continue;
-                }
+                AppConfig appConfig = this.application.getMineOSLib().getAppConfig(id);
+                if (appConfig == null || appConfig.runAsService) continue;
                 McButton add = list.add(new McButton(0, listY, this.width, 15, id.getName()));
                 add.addClickHandler(button -> {
                     try {

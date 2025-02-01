@@ -5,7 +5,12 @@ import dev.ultreon.devicesnext.mineos.FileSystem;
 
 public class FSRoot extends FSDirectory {
     public FSRoot(Disk disk, FileSystem fs) {
-        super(disk, fs, null, 0L);
+        super(disk, fs, null, 1L);
+    }
+
+    @Override
+    public void open() {
+        super.open();
     }
 
     @Override

@@ -281,7 +281,7 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
                         return true;
                     }
                 } catch (Exception e) {
-                    crashApplication(this.pressedWindow.application, e);
+                    crashApplication(window.application, e);
                     return false;
                 }
             }

@@ -1,6 +1,7 @@
 package dev.ultreon.devicesnext.mineos;
 
 import dev.ultreon.devicesnext.device.hardware.FSNode;
+import dev.ultreon.devicesnext.device.hardware.FSRoot;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -8,12 +9,35 @@ import java.util.BitSet;
 
 public class FileSystem {
     private final Disk disk;
+    private final FSHeader fsHeader;
     private FSNode root;
     private BitSet allocatedBlocks;
 
     public FileSystem(Disk disk) {
         this.disk = disk;
+        allocatedBlocks = new BitSet((int) (disk.length() / Disk.BLOCK_SIZE));
         loadAllocations();
+
+        this.fsHeader = new FSHeader(disk, this);
+
+        if (fsHeader.isInitialized()) {
+            this.root = new FSRoot(disk, this);
+            this.root.open();
+        }
+    }
+
+    public boolean isInitialized() {
+        return this.fsHeader.isInitialized();
+    }
+
+    public void initialize() {
+        this.fsHeader.initialize();
+        this.root = new FSRoot(disk, this);
+        this.root.setLastAccessed(System.nanoTime());
+        this.root.setLastModified(System.nanoTime());
+        this.root.setCreated(System.nanoTime());
+        this.root.flush();
+        this.root.open();
     }
 
     public FSNode get(Path path) {
@@ -24,12 +48,12 @@ public class FileSystem {
         FSNode node = this.root;
         for (int i = 0; i < path.getNameCount(); i++) {
             String name = path.getName(i).toString();
-            node.open();
-            node = node.getChild(name);
-            node.close();
             if (node == null) {
                 return null;
             }
+            node.open();
+            node = node.getChild(name);
+            node.close();
         }
 
         return node;
@@ -96,5 +120,35 @@ public class FileSystem {
         }
 
         allocatedBlocks = BitSet.valueOf(longArray);
+    }
+
+    private static class FSHeader {
+        private final boolean initialized;
+        private final Disk disk;
+        private final FileSystem fs;
+
+        public FSHeader(Disk disk, FileSystem fs) {
+            this.disk = disk;
+            this.fs = fs;
+            ByteBuffer buffer = ByteBuffer.allocate(Disk.BLOCK_SIZE);
+            disk.readBlock(0, buffer);
+            buffer.flip();
+
+            byte[] dst = new byte[16];
+            buffer.get(0, dst);
+            String signature = new String(dst);
+            this.initialized = signature.equals("MineOSFS");
+        }
+
+        public boolean isInitialized() {
+            return initialized;
+        }
+
+        public void initialize() {
+            ByteBuffer buffer = ByteBuffer.allocate(Disk.BLOCK_SIZE);
+            buffer.put("MineOSFS".getBytes());
+            buffer.flip();
+            disk.writeBlock(0, buffer, 0, Disk.BLOCK_SIZE);
+        }
     }
 }

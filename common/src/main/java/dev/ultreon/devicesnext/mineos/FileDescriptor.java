@@ -68,4 +68,8 @@ public final class FileDescriptor {
     public void write(ByteBuffer buffer) {
         file.write(off, buffer);
     }
+
+    public long tell() {
+        return (long) off;
+    }
 }

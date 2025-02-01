@@ -3,6 +3,7 @@ package dev.ultreon.devicesnext.mineos;
 import com.google.common.collect.Lists;
 import com.ultreon.mods.lib.client.gui.screen.BaseScreen;
 import dev.ultreon.devicesnext.api.OperatingSystem;
+import dev.ultreon.devicesnext.client.ScissorStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -21,12 +22,12 @@ import java.util.Set;
  */
 public class DeviceScreen extends BaseScreen {
     private final Screen back;
-    private final Kernel kernel;
     private final boolean desktopFullscreen;
     protected int desktopX;
     protected int desktopY;
     protected int desktopWidth;
     protected int desktopHeight;
+    private Kernel kernel;
     private OperatingSystemImpl system;
 
     public DeviceScreen(LaunchOptions options) {
@@ -42,9 +43,15 @@ public class DeviceScreen extends BaseScreen {
         this.desktopY = (this.height - this.desktopHeight) / 2;
         this.desktopFullscreen = options.fullscreen;
 
-        this.system = new OperatingSystemImpl(this, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, Lists.newArrayList(options.windows), new DesktopApplication());
-        this.system.border = new Insets(0, 0, 20, 0);
-        this.kernel = this.system.kernel;
+        try {
+            this.system = new OperatingSystemImpl(this, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, Lists.newArrayList(options.windows), new DesktopApplication());
+            this.system.border = new Insets(0, 0, 20, 0);
+            this.kernel = this.system.kernel;
+
+            this.system._boot();
+        } catch (Throwable throwable) {
+            this.system._raiseHardError(throwable);
+        }
     }
 
     @Override
@@ -96,14 +103,18 @@ public class DeviceScreen extends BaseScreen {
         int finalMouseY = mouseY;
 
         if (!this.desktopFullscreen) {
-//            BaseScreen.renderFrame(gfx, this.desktopX - 8, this.desktopY - 8, this.desktopWidth + 16, this.desktopHeight + 16, this.getTheme(), FrameType.BORDER);
+            BaseScreen.renderFrame(gfx, this.desktopX - 8, this.desktopY - 8, this.desktopWidth + 16, this.desktopHeight + 16, this.getTheme());
         }
 
-//        MoreGuiGraphics.subInstance(gfx, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, () -> {
-            this.system.setWidth(this.width);
-            this.system.setHeight(this.height);
-            this.system.render(gfx, finalMouseX - this.desktopX, finalMouseY - this.desktopY, partialTicks);
-//        });
+        try {
+            ScissorStack.scissor(gfx, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, () -> {
+                this.system.setWidth(this.width);
+                this.system.setHeight(this.height);
+                this.system.render(gfx, finalMouseX - this.desktopX, finalMouseY - this.desktopY, partialTicks);
+            });
+        } catch (Throwable throwable) {
+            this.system._raiseHardError(throwable);
+        }
     }
 
     @Override
@@ -117,7 +128,8 @@ public class DeviceScreen extends BaseScreen {
 
                 gfx.pose().popPose();
             }
-            this.renderDirtBackground(gfx);
+
+            super.renderBackground(gfx);
         } else {
             super.renderBackground(gfx);
         }
@@ -194,7 +206,7 @@ public class DeviceScreen extends BaseScreen {
         Minecraft.getInstance().setScreen(back);
     }
 
-    public Application getKernel() {
+    public @Nullable Application getKernel() {
         return kernel;
     }
 

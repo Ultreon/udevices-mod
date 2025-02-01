@@ -80,6 +80,21 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
 
         instance = this;
 
+        this.screen = screen;
+        this.desktopApp = desktopApp;
+    }
+
+    void _boot() {
+        this.disk = new Disk(UUID.nameUUIDFromBytes("player".getBytes()), UUID.nameUUIDFromBytes("kernel".getBytes()));
+        this.disk.open();
+        this.fileSystem = new FileSystem(disk);
+        this.fdManager = new FileDescriptorManager(this);
+        this.stdLib = new LibStd(this);
+        this.stdLib._init();
+
+        this.mineOSLib = new LibMineOS(this);
+        this.mineOSLib._init();
+
         try {
             // Register apps and spawn kernel
             this._spawn(this.kernel, new String[]{});
@@ -91,8 +106,6 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             this.permissionManager.grantPermission(DesktopApplication.id(), Permission.LIST_APPLICATIONS);
             this.permissionManager.grantPermission(DesktopApplication.id(), Permission.SPAWN_APPLICATIONS);
 
-            this.screen = screen;
-            this.desktopApp = desktopApp;
             this._spawn(desktopApp, new String[0]);
 
             this.desktop = desktopApp.getDesktop();
@@ -100,14 +113,6 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         } catch (Throwable throwable) {
             this._raiseHardError(throwable);
         }
-    }
-
-    void _boot() {
-        this.disk = new Disk(UUID.nameUUIDFromBytes("player".getBytes()), UUID.nameUUIDFromBytes("kernel".getBytes()));
-        this.fileSystem = new FileSystem(disk);
-        this.fdManager = new FileDescriptorManager(this);
-        this.stdLib = new LibStd(this);
-        this.stdLib._init();
     }
 
     @SuppressWarnings("unchecked")
@@ -222,7 +227,11 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             this.crashApplication(this.desktopApp, e);
         }
 
-        this.createWindow(new ShutdownWindow(kernel, 0, 0, width, height, "Shutting down..."));
+        try {
+            this.createWindow(new ShutdownWindow(kernel, 0, 0, width, height, "Shutting down..."));
+        } catch (Exception e) {
+            logger.error("Failed to create shutdown window", e);
+        }
 
         CompletableFuture.runAsync(() -> {
             CompletableFuture<Void> future = CompletableFuture.runAsync(this::quitAppsForShutdown);
@@ -315,7 +324,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         this._raiseHardError(throwable);
     }
 
-    private void _raiseHardError(Throwable throwable) {
+    void _raiseHardError(Throwable throwable) {
         this.openApps.clear();
         this.windows.clear();
 
@@ -637,6 +646,10 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
 
     public AppConfig getAppConfig(ApplicationId id) {
         int fd = this.stdLib.open("/apps/" + id.getGroup() + "/" + id.getModule() + ".json", 0);
+
+        if (fd == -1) {
+            return null;
+        }
 
         try {
             long l = this.stdLib.fstat(fd).st_size();

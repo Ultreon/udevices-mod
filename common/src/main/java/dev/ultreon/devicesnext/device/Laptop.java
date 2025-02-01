@@ -74,7 +74,7 @@ public class Laptop extends McDevice {
     public void connectDisplay(@NotNull Player player) {
         super.connectDisplay(player);
 
-        DeviceScreen screen = new DeviceScreen(new DeviceScreen.LaunchOptions().fullscreen());
+        DeviceScreen screen = new DeviceScreen(new DeviceScreen.LaunchOptions());
         screen.open();
     }
 
