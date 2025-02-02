@@ -101,7 +101,7 @@ public class Window extends McContainer {
         int finalMouseX = mx;
         int finalMouseY = my;
 
-        ScissorStack.scissor(gfx, this.getX() + getBorder().left(), this.getY() + getBorder().top(), this.getWidth() - getBorder().left() - getBorder().right(), this.getHeight() - getBorder().top() - getBorder().bottom(), () -> {
+        ScissorStack.scissor(gfx, this.getX() + getBorder().left(), this.getY() + getBorder().top(), this.getWidth(), this.getHeight(), () -> {
             this.renderBackground(gfx, finalMouseX, finalMouseY, partialTicks);
             super.render(gfx, finalMouseX, finalMouseY, partialTicks);
         });

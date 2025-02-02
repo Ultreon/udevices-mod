@@ -53,6 +53,7 @@ public abstract class Application {
     }
 
      public void createWindow(Window window) {
+        if (this.wm == null) return;
         this.wm.createWindow(window);
         this.windows.add(window);
     }

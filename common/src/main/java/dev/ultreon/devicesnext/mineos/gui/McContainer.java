@@ -25,7 +25,7 @@ public abstract class McContainer extends McComponent {
     public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         var innerX = 0 + getBorder().left();
         var innerY = 0 + getBorder().top();
-        ScissorStack.scissor(gfx, innerX, innerY, getWidth() + getBorder().left(), getHeight() + getBorder().top(), () -> {
+        ScissorStack.scissor(gfx, 0, 0, getWidth(), getHeight(), () -> {
             var translatedX = mouseX - 0 - this.getBorder().left();
             var translatedY = mouseY - 0 - this.getBorder().top();
             renderContents(gfx, translatedX, translatedY, partialTicks);

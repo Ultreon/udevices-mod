@@ -134,13 +134,18 @@ public class Disk {
                 throw new FileSystemIoException("Disk is not opened");
             }
 
-            if (block < 0) throw new FileSystemIoException("Invalid block: " + block);
-            if (offset < 0) throw new FileSystemIoException("Invalid offset: " + offset);
-            if (length < 0) throw new FileSystemIoException("Invalid length: " + length);
-            if (offset + length > BLOCK_SIZE) throw new FileSystemIoException("Offset " + (offset + length) + " exceeds block size " + BLOCK_SIZE);
+            if (block < 0)
+                throw new FileSystemIoException("Invalid block: " + block);
+            if (offset < 0)
+                throw new FileSystemIoException("Invalid offset: " + offset);
+            if (length < 0)
+                throw new FileSystemIoException("Invalid length: " + length);
+            if (offset + length > BLOCK_SIZE)
+                throw new FileSystemIoException("Offset " + (offset + length) + " exceeds block size " + BLOCK_SIZE);
 
             try {
-                if ((long) block * BLOCK_SIZE + offset + buffer.capacity() > length())
+                long start = (long) block * BLOCK_SIZE + offset;
+                if (start + length > length())
                     throw new FileSystemIoException("Attempted to write beyond disk space.");
                 this.io.seek((long) block * BLOCK_SIZE + offset);
                 buffer.limit(length);

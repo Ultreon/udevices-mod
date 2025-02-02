@@ -98,16 +98,18 @@ public class FileSystem {
 
     public void flush() {
         long length = disk.length();
-        long endAddress = Math.floorDiv(length, Disk.BLOCK_SIZE) * Disk.BLOCK_SIZE - Disk.BLOCK_SIZE * 3;
+        long endAddress = Math.floorDiv(length, Disk.BLOCK_SIZE) * Disk.BLOCK_SIZE - Disk.BLOCK_SIZE * 4;
         long startAddress = (endAddress - allocatedBlocks.length() / Byte.SIZE);
         startAddress = Math.floorDiv(startAddress, Disk.BLOCK_SIZE) * Disk.BLOCK_SIZE;
 
-        ByteBuffer buffer = ByteBuffer.allocate((int) Math.floorDiv(disk.length(), Disk.BLOCK_SIZE));
+        ByteBuffer buffer = ByteBuffer.allocate(Disk.BLOCK_SIZE);
         buffer.flip();
         buffer.position(0);
-        buffer.limit((int) Math.floorDiv(disk.length(), Disk.BLOCK_SIZE));
+        buffer.limit(Disk.BLOCK_SIZE);
         long[] longArray = allocatedBlocks.toLongArray();
         for (long i = startAddress; i < endAddress; i += Disk.BLOCK_SIZE) {
+            buffer.clear();
+            buffer.position(0);
             for (int j = 0; j < Disk.BLOCK_SIZE / Long.BYTES; j++) {
                 int block = (int) ((i - startAddress) / Disk.BLOCK_SIZE / Long.BYTES) + j;
                 if (block >= longArray.length) {

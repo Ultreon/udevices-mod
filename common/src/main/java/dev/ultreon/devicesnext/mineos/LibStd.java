@@ -177,7 +177,8 @@ public class LibStd implements SystemLibrary {
 
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.open();
         FSNode child1 = fsDirectory.getChild(fname);
-        if (child1 == null) throw new FileSystemIoException("Failed to write directory to disk!");
+        if (child1 == null)
+            throw new FileSystemIoException("Failed to write directory to disk!");
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.close();
         return 0;
     }

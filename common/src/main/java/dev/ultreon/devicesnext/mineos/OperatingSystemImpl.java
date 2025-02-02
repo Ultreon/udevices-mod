@@ -85,6 +85,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     private LibMineOS mineOSLib;
     private V8Host host;
     private V8Runtime runtime;
+    private long lastInstallCheck;
 
     public OperatingSystemImpl(DeviceScreen screen, int width, int height, ArrayList<Window> windows, DesktopApplication desktopApp) {
         this(screen, 0, 0, width, height, windows, desktopApp);
@@ -293,6 +294,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         this.getLogger().error("Application crash:", e);
         this.annihilateApp(application);
         MutableComponent description = Component.literal((ChatFormatting.BOLD + "%s:\n" + ChatFormatting.WHITE + "  %s\n\n" + ChatFormatting.GRAY + "Check logs for more information").formatted(e.getClass().getSimpleName(), e.getMessage()));
+        application.windows.clear();
         this.kernel.createWindow(MessageDialog.create(this.kernel, MessageDialog.Icons.ERROR, Component.literal("Application Crash"), description));
 
         this.crashing.remove(application);
@@ -301,6 +303,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     private void annihilateApp(Application application) {
         for (Window window : application.windows) {
             window._destroy();
+            window.wm.destroyWindow(window);
             this.windows.remove(window);
         }
 
@@ -535,7 +538,11 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     @Override
     public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         gfx.fill(this.getX(), this.getY(), this.width, this.height, 0xff404040);
-
+        if (lastInstallCheck + 5000 < System.currentTimeMillis() && (!this.fileSystem.isInitialized() || !this.fileSystem.exists("/data/installed")) && this.windows.stream().noneMatch(window -> window instanceof FirstTimeSetupApplication.FirstTimeSetupWindow)) {
+            this._spawn(new FirstTimeSetupApplication(this, new ApplicationId("dev.ultreon:setup")), new String[0]);
+        } else {
+            lastInstallCheck =  System.currentTimeMillis();
+        }
         if (this.bsod != null) {
             long millisRemaining = this.shutdownTime - System.currentTimeMillis();
             if (millisRemaining < 0) {
