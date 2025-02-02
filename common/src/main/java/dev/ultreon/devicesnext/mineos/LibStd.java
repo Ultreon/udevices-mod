@@ -4,6 +4,7 @@ import dev.ultreon.devicesnext.device.hardware.FSDirectory;
 import dev.ultreon.devicesnext.device.hardware.FSFile;
 import dev.ultreon.devicesnext.device.hardware.FSNode;
 import dev.ultreon.devicesnext.device.hardware.FSRoot;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -36,25 +37,25 @@ public class LibStd implements SystemLibrary {
     }
 
     int open(String path, int flags) {
-        Path pathObj = Path.of(path);
         if ((flags & O_CREAT) == O_CREAT) {
-            FSNode fsNode = operatingSystem.getFileSystem().get(pathObj.getParent());
+            String parent = parent(path);
+            FSNode fsNode = operatingSystem.getFileSystem().get(parent);
             if (fsNode == null) {
-                this.error = "Directory not found: " + pathObj.getParent();
+                this.error = "Directory not found: " + parent;
                 this.errno = 2;
                 return -1;
             }
 
             if (!(fsNode instanceof FSDirectory fsDirectory)) {
-                this.error = "Not a directory: " + pathObj.getParent();
+                this.error = "Not a directory: " + parent;
                 this.errno = 2;
                 return -1;
             }
 
-            fsDirectory.createFile(pathObj.getFileName().toString());
+            fsDirectory.createFile(fname(path));
         }
 
-        FSNode fsNode = operatingSystem.getFileSystem().get(pathObj);
+        FSNode fsNode = operatingSystem.getFileSystem().get(path);
         if (fsNode == null) {
             this.error = "File not found: " + path;
             this.errno = 2;
@@ -66,6 +67,21 @@ public class LibStd implements SystemLibrary {
             return -1;
         }
         return operatingSystem.gerFdManager().open(path, fsFile, flags);
+    }
+
+    private String fname(String path) {
+        return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    private static @NotNull String parent(String path) {
+        if (path.equals("/")) {
+            return path;
+        }
+        int endIndex = path.lastIndexOf("/");
+        if (endIndex == 0 && path.startsWith("/")) {
+            return "/";
+        }
+        return path.substring(0, endIndex);
     }
 
     void close(int fd) {
@@ -138,28 +154,29 @@ public class LibStd implements SystemLibrary {
     }
 
     int mkdir(String path, int mode) {
-        Path pathObj = Path.of(path);
-        FSNode parent = operatingSystem.getFileSystem().get(pathObj.getParent());
+        String parentPath = parent(path);
+        FSNode parent = operatingSystem.getFileSystem().get(parentPath);
         if (parent == null) {
-            this.error = "Directory not found: " + pathObj.getParent();
+            this.error = "Directory not found: " + parentPath;
             this.errno = 2;
             return -1;
         }
         if (!(parent instanceof FSDirectory fsDirectory)) {
-            this.error = "Not a directory: " + pathObj.getParent();
+            this.error = "Not a directory: " + parentPath;
             this.errno = 2;
             return -1;
         }
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.open();
-        fsDirectory.createDirectory(pathObj.getFileName().toString());
-        FSDirectory child = (FSDirectory) fsDirectory.getChild(pathObj.getFileName().toString());
+        String fname = fname(path);
+        fsDirectory.createDirectory(fname);
+        FSDirectory child = (FSDirectory) fsDirectory.getChild(fname);
         child.flush();
         child.close();
         fsDirectory.flush();
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.close();
 
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.open();
-        FSNode child1 = fsDirectory.getChild(pathObj.getFileName().toString());
+        FSNode child1 = fsDirectory.getChild(fname);
         if (child1 == null) throw new FileSystemIoException("Failed to write directory to disk!");
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.close();
         return 0;

@@ -42,28 +42,29 @@ public class FileSystem {
         this.root.open();
     }
 
-    public FSNode get(Path path) {
+    public FSNode get(String path) {
         if (this.root == null) {
             throw new IllegalStateException("File system is not initialized");
         }
 
-        if (path == Path.of("/")) {
+        if (path.equals("/")) {
             return this.root;
         }
 
-        if (!path.isAbsolute()) {
-            throw new IllegalArgumentException("Path must be absolute");
+        String replace = path.replace('\\', '/');
+        if (!replace.startsWith("/")) {
+            throw new IllegalArgumentException("Path must be absolute: " + replace);
         }
 
         FSNode node = this.root;
-        for (int i = 0; i < path.getNameCount(); i++) {
-            String name = path.getName(i).toString();
-            node.open();
+        String[] split = path.substring(1).split("/");
+        for (String name : split) {
+            if (!node.equals(root)) node.open();
             node = node.getChild(name);
             if (node == null) {
                 return null;
             }
-            node.close();
+            if (!node.equals(root)) node.close();
         }
 
         return node;
@@ -97,7 +98,7 @@ public class FileSystem {
 
     public void flush() {
         long length = disk.length();
-        long endAddress = Math.floorDiv(length, Disk.BLOCK_SIZE) * Disk.BLOCK_SIZE;
+        long endAddress = Math.floorDiv(length, Disk.BLOCK_SIZE) * Disk.BLOCK_SIZE - Disk.BLOCK_SIZE * 3;
         long startAddress = (endAddress - allocatedBlocks.length() / Byte.SIZE);
         startAddress = Math.floorDiv(startAddress, Disk.BLOCK_SIZE) * Disk.BLOCK_SIZE;
 
@@ -142,7 +143,7 @@ public class FileSystem {
         allocatedBlocks = BitSet.valueOf(longArray);
     }
 
-    public boolean exists(Path of) {
+    public boolean exists(String of) {
         return get(of) != null;
     }
 

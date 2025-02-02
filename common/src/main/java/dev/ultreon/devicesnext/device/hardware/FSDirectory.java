@@ -48,13 +48,14 @@ public class FSDirectory implements FSNode {
             dst = new byte[b];
         }
         this.name = new String(dst, 0, b);
+        buffer.position(16);
+        this.length = buffer.getLong();
+        this.dataBlock = buffer.getLong();
+        disk.isWithinSpace(dataBlock);
 
-        int idx = 16;
-        this.length = buffer.getLong(idx += Long.BYTES);
-        this.dataBlock = buffer.getLong(idx += Long.BYTES);
-        this.created = buffer.getLong(idx += Long.BYTES);
-        this.lastAccessed = buffer.getLong(idx += Long.BYTES);
-        this.lastModified = buffer.getLong(idx += Long.BYTES);
+        this.created = buffer.getLong();
+        this.lastAccessed = buffer.getLong();
+        this.lastModified = buffer.getLong();
 
         buffer.clear();
     }
@@ -189,8 +190,11 @@ public class FSDirectory implements FSNode {
     }
 
     public void flush() {
-        if (dataBlock <= 0) dataBlock = (long) fs.allocateBlock() * BLOCK_SIZE;
+        if (dataBlock <= 0) dataBlock = fs.allocateBlock();
         if (dataBlock <= 0) throw new FileSystemIoException("Data block outside of filesystem bounds");
+
+        this.disk.isWithinSpace(dataBlock);
+        this.disk.isWithinSpace(dataBlock);
 
         this.children.forEach((key, value) -> value.flush());
 
@@ -219,7 +223,8 @@ public class FSDirectory implements FSNode {
         }
         buffer.flip();
 
-        if ((int) dataBlock <= 0) throw new HardError(new FileSystemIoException("FS mutation detection: " + (int) dataBlock));
+        if ((int) dataBlock <= 0)
+            throw new HardError(new FileSystemIoException("FS mutation detection: " + (int) dataBlock));
         disk.writeBlock((int) dataBlock, buffer, 0, buffer.capacity());
         fs.flush();
     }

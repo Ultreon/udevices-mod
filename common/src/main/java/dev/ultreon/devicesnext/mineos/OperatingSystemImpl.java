@@ -156,7 +156,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             this.permissionManager.grantPermission(DesktopApplication.id(), Permission.LIST_APPLICATIONS);
             this.permissionManager.grantPermission(DesktopApplication.id(), Permission.SPAWN_APPLICATIONS);
 
-            if (!this.fileSystem.exists(Path.of("/data/installed"))) {
+            if (!this.fileSystem.exists("/data/installed")) {
                 this._spawn(setupApp, new String[0]);
             } else {
                 this._spawn(desktopApp, new String[0]);
@@ -172,7 +172,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     @SuppressWarnings("t")
     private void loadApps(V8Runtime runtime, JNEventLoop eventLoop) {
         try {
-            FSNode fsNode = this.fileSystem.get(Path.of("/data/appcfg/"));
+            FSNode fsNode = this.fileSystem.get("/data/appcfg/");
 
             if (fsNode == null || !fsNode.isDirectory()) {
                 return;

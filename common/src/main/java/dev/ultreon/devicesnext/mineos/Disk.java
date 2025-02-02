@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.UUID;
 
 public class Disk {
@@ -38,8 +39,11 @@ public class Disk {
                     if (!newFile) {
                         throw new FileSystemIoException("Failed to initialize disk");
                     }
+
                     this.io = new RandomAccessFile(owner + "/" + serial + ".img", "rw");
                     this.io.setLength(16 * 1024 * 1024);
+                    this.io.seek(16 * 1024 * 1024 - 1);
+                    this.io.write(0);
                     this.io.seek(0);
                     this.io.getFD().sync();
                 } catch (IOException ex) {
@@ -87,7 +91,10 @@ public class Disk {
             if (block < 0) throw new FileSystemIoException("Invalid block: " + block);
 
             try {
-                this.io.seek(block * BLOCK_SIZE);
+                long pos = block * BLOCK_SIZE;
+                long endPos = pos + buffer.capacity();
+                if (endPos > this.length()) throw new FileSystemIoException("Attempted to read beyond disk space: " + endPos + " > " + this.length());
+                this.io.seek(pos);
                 byte[] buf = new byte[BLOCK_SIZE];
                 buffer.limit(BLOCK_SIZE);
                 buffer.position(0);
@@ -133,6 +140,8 @@ public class Disk {
             if (offset + length > BLOCK_SIZE) throw new FileSystemIoException("Offset " + (offset + length) + " exceeds block size " + BLOCK_SIZE);
 
             try {
+                if ((long) block * BLOCK_SIZE + offset + buffer.capacity() > length())
+                    throw new FileSystemIoException("Attempted to write beyond disk space.");
                 this.io.seek((long) block * BLOCK_SIZE + offset);
                 buffer.limit(length);
                 buffer.position(0);
@@ -140,7 +149,7 @@ public class Disk {
                 buffer.get(buf, 0, buf.length);
                 this.io.write(buf);
             } catch (IOException e) {
-                throw new FileSystemIoException("Failed to write block", e);
+                throw new FileSystemIoException(e);
             }
         }
     }
@@ -151,7 +160,7 @@ public class Disk {
                 throw new FileSystemIoException("Disk is not opened");
             }
             try {
-                return this.io.length() / BLOCK_SIZE;
+                return this.io.length();
             } catch (IOException e) {
                 throw new FileSystemIoException("Failed to get disk length", e);
             }
@@ -169,5 +178,10 @@ public class Disk {
                 throw new FileSystemIoException("Failed to flush disk", e);
             }
         }
+    }
+
+    public void isWithinSpace(long dataBlock) {
+        if (dataBlock * BLOCK_SIZE > length())
+            throw new IllegalArgumentException("Impossible data block: " + dataBlock + " @" + (dataBlock * BLOCK_SIZE) + " is beyond disk space: " + length());
     }
 }
