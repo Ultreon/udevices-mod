@@ -36,4 +36,8 @@ public class FSRoot extends FSDirectory {
     public boolean isRoot() {
         return true;
     }
+
+    public void init() {
+        opened = true;
+    }
 }

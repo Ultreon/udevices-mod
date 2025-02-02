@@ -95,7 +95,7 @@ public abstract class Application {
         return this.id.equals(application.id);
     }
 
-    public LibStd getStdLib() {
+    public LibStd getLibStd() {
         return system.getStdLib();
     }
 

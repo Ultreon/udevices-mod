@@ -67,34 +67,33 @@ class FirstTimeSetupApplication extends Application {
 
         private void setup() {
             try {
-                LibStd stdLib = this.application.getStdLib();
+                LibStd libStd = this.application.getLibStd();
 
                 if (!operatingSystem.getFileSystem().isInitialized()) {
                     operatingSystem.getFileSystem().initialize();
                 }
 
-                stdLib.mkdir("/data", 0755);
-                stdLib.mkdir("/data/appcfg", 0755);
-                stdLib.mkdir("/data/apps", 0755);
-                stdLib.mkdir("/data/kernel", 0755);
-                stdLib.mkdir("/data/kernel/bin", 0755);
+                libStd.mkdir("/data", 0755);
+                libStd.mkdir("/data/appcfg", 0755);
+                libStd.mkdir("/data/apps", 0755);
+                libStd.mkdir("/data/kernel", 0755);
+                libStd.mkdir("/data/kernel/bin", 0755);
 
-                if (stdLib.mkdir("/apps", 0755) == -1)
-                    throw new RuntimeException(stdLib.strerror() + " (I/O error " + stdLib.errno() + ")");
-                if (stdLib.mkdir("/apps/@ultreon", 0755) == -1)
-                    throw new RuntimeException(stdLib.strerror() + " (I/O error " + stdLib.errno() + ")");
-                if (stdLib.mkdir("/data/appcfg/@ultreon", 0755) == -1)
-                    throw new RuntimeException(stdLib.strerror() + " (I/O error " + stdLib.errno() + ")");
+                if (libStd.mkdir("/apps", 0755) == -1)
+                    throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
+                if (libStd.mkdir("/apps/@ultreon", 0755) == -1)
+                    throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
+                if (libStd.mkdir("/apps/@ultreon/mineos", 0755) == -1)
+                    throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
 
-                int notepadJs = stdLib.open("/apps/@ultreon/mineos/notepad.js", stdLib.O_CREAT | stdLib.O_WRONLY | stdLib.O_TRUNC);
+                int notepadJs = libStd.open("/apps/@ultreon/mineos/notepad.js", LibStd.O_CREAT | LibStd.O_WRONLY | LibStd.O_TRUNC);
                 if (notepadJs == -1) {
-                    throw new RuntimeException(stdLib.strerror() + " (I/O error " + stdLib.errno() + ")");
+                    throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
                 }
-                int notepadJson = stdLib.open("/data/appcfg/@ultreon/mineos/notepad.json", stdLib.O_CREAT | stdLib.O_WRONLY | stdLib.O_TRUNC);
-
+                int notepadJson = libStd.open("/apps/@ultreon/mineos/notepad.json", LibStd.O_CREAT | LibStd.O_WRONLY | LibStd.O_TRUNC);
 
                 if (notepadJson == -1) {
-                    throw new RuntimeException(stdLib.strerror() + " (I/O error " + stdLib.errno() + ")");
+                    throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
                 }
 
                 try {
@@ -103,18 +102,22 @@ class FirstTimeSetupApplication extends Application {
 
                     ByteBuffer jsBuf = ByteBuffer.wrap(notepadJsString.getBytes());
                     ByteBuffer jsonBuf = ByteBuffer.wrap(notepadJsonString.getBytes());
-                    stdLib.write(notepadJs, jsBuf);
-                    stdLib.write(notepadJson, jsonBuf);
+                    libStd.write(notepadJs, jsBuf);
+                    libStd.write(notepadJson, jsonBuf);
 
-                    stdLib.close(notepadJs);
-                    stdLib.close(notepadJson);
+                    libStd.close(notepadJs);
+                    libStd.close(notepadJson);
 
                     jsBuf.clear();
                     jsonBuf.clear();
                 } catch (IOException e) {
+                    libStd.close(notepadJs);
+                    libStd.close(notepadJson);
+
                     throw new RuntimeException(e);
                 }
             } catch (Throwable t) {
+                operatingSystem.getLogger().error("Whoops!", t);
                 openDialog(MessageDialog.create(application, MessageDialog.Icons.ERROR, Component.literal("Could not setup MineOS"), Component.literal(ChatFormatting.BOLD + t.getClass().getName() + "\n" + ChatFormatting.RESET + t.getMessage())));
             }
         }

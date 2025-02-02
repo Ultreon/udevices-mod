@@ -10,7 +10,7 @@ import java.util.BitSet;
 public class FileSystem {
     private final Disk disk;
     private final FSHeader fsHeader;
-    private FSNode root;
+    private FSRoot root;
     private BitSet allocatedBlocks;
 
     public FileSystem(Disk disk) {
@@ -35,6 +35,7 @@ public class FileSystem {
 
         this.fsHeader.initialize();
         this.root = new FSRoot(disk, this);
+        this.root.init();
         this.root.setLastAccessed(System.nanoTime());
         this.root.setLastModified(System.nanoTime());
         this.root.setCreated(System.nanoTime());

@@ -7,8 +7,8 @@ import dev.ultreon.devicesnext.mineos.FileSystemIoException;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import static dev.ultreon.devicesnext.mineos.Disk.BLOCK_SIZE;
 
@@ -23,46 +23,57 @@ public class FSDirectory implements FSNode {
     private long created = -1;
     private long lastAccessed = -1;
     private long lastModified = -1;
-    private final Map<String, FSNode> children = new HashMap<>();
+    private final Map<String, FSNode> children = new WeakHashMap<>();
 
     protected final FileSystem fs;
+    boolean opened = false;
 
-    public FSDirectory(Disk disk, FileSystem fs, FSDirectory parent, long address) {
-        this.disk = disk;
-        this.parent = parent;
-        this.address = address;
-        this.fs = fs;
+    public FSDirectory(Disk diskIn, FileSystem fsIn, FSDirectory parentIn, long addressIn) {
+        disk = diskIn;
+        parent = parentIn;
+        address = addressIn;
+        fs = fsIn;
 
-        if (address < BLOCK_SIZE) {
-            throw new IllegalArgumentException("Invalid address: " + address);
+        if (addressIn < BLOCK_SIZE) {
+            throw new IllegalArgumentException("Invalid address: " + addressIn);
         }
 
-        disk.readBlock(Math.floorDiv(address, BLOCK_SIZE), buffer);
+        diskIn.readBlock(Math.floorDiv(addressIn, BLOCK_SIZE), buffer);
         buffer.flip();
+        buffer.position(0);
 
         byte b = buffer.get();
         byte[] dst = new byte[16];
-        buffer.get(0, dst);
+        buffer.get(1, dst);
         if (b > dst.length) {
             UDevicesMod.LOGGER.warn("File name too long: " + b + " > " + dst.length);
             dst = new byte[b];
         }
-        this.name = new String(dst, 0, b);
+        name = new String(dst, 0, b);
         buffer.position(16);
-        this.length = buffer.getLong();
-        this.dataBlock = buffer.getLong();
-        disk.isWithinSpace(dataBlock);
+        length = buffer.getLong();
+        dataBlock = buffer.getLong();
+        diskIn.isWithinSpace(dataBlock);
 
-        this.created = buffer.getLong();
-        this.lastAccessed = buffer.getLong();
-        this.lastModified = buffer.getLong();
+        created = buffer.getLong();
+        lastAccessed = buffer.getLong();
+        lastModified = buffer.getLong();
 
         buffer.clear();
     }
 
+    FSDirectory(Disk diskIn, FileSystem fsIn, FSDirectory parentIn) {
+        disk = diskIn;
+        fs = fsIn;
+        parent = parentIn;
+        address = (long) fsIn.allocateBlock() * BLOCK_SIZE;
+        dataBlock = fsIn.allocateBlock();
+        opened = true;
+    }
+
     @Override
     public void open() {
-        if (!children.isEmpty() && !(this instanceof FSRoot)) throw new FileSystemIoException("File in use");
+        if (opened && !(this instanceof FSRoot)) return;
 
         if (dataBlock > 0) {
             buffer.clear();
@@ -85,6 +96,8 @@ public class FSDirectory implements FSNode {
                 children.put(child.getName(), child);
             }
             buffer.clear();
+
+            opened = true;
         } else {
             children.clear();
             flush();
@@ -93,6 +106,7 @@ public class FSDirectory implements FSNode {
 
     @Override
     public void close() {
+        opened = false;
         children.clear();
     }
 
@@ -108,6 +122,7 @@ public class FSDirectory implements FSNode {
 
     @Override
     public FSNode getChild(String name) {
+        if (!opened) throw new IllegalStateException("Directory node not opened!");
         return children.get(name);
     }
 
@@ -152,7 +167,8 @@ public class FSDirectory implements FSNode {
     }
 
     public void delete(String name) {
-
+        // TODO
+        throw new UnsupportedOperationException("TODO");
     }
 
     public boolean isRoot() {
@@ -160,7 +176,10 @@ public class FSDirectory implements FSNode {
     }
 
     public void createFile(String name) {
-        FSFile file = new FSFile(disk, fs, this, (long) fs.allocateBlock() * BLOCK_SIZE);
+        if (!opened) throw new IllegalStateException("Directory node not opened!");
+        if (this.children.containsKey(name)) throw new FileSystemIoException("File already exists");
+
+        FSFile file = new FSFile(disk, fs, this);
         file.name = name;
         file.setCreated(System.nanoTime());
         file.setLastAccessed(System.nanoTime());
@@ -169,14 +188,17 @@ public class FSDirectory implements FSNode {
         file.setMode(0);
         file.flush();
         file.close();
-        this.children.put(name, new FSFile(disk, fs, this, (long) fs.allocateBlock() * BLOCK_SIZE));
+        this.children.put(name, file);
 
         flush();
         fs.flush();
     }
 
     public void createDirectory(String name) {
-        FSDirectory value = new FSDirectory(disk, fs, this, (long) fs.allocateBlock() * BLOCK_SIZE);
+        if (!opened) throw new IllegalStateException("Directory node not opened!");
+        if (this.children.containsKey(name)) throw new FileSystemIoException("File already exists");
+
+        FSDirectory value = new FSDirectory(disk, fs, this);
         value.name = name;
         value.setCreated(System.nanoTime());
         value.setLastAccessed(System.nanoTime());
@@ -190,16 +212,26 @@ public class FSDirectory implements FSNode {
     }
 
     public void flush() {
+        if (!opened) throw new IllegalStateException("Directory node not opened!");
         if (dataBlock <= 0) dataBlock = fs.allocateBlock();
         if (dataBlock <= 0) throw new FileSystemIoException("Data block outside of filesystem bounds");
 
         this.disk.isWithinSpace(dataBlock);
         this.disk.isWithinSpace(dataBlock);
 
-        this.children.forEach((key, value) -> value.flush());
+        this.children.forEach((key, value) -> {
+            if (value.isOpen()) {
+                value.flush();
+            }
+        });
+
+        if (name.length() >= 16) {
+            throw new IllegalArgumentException("Name too long: " + name);
+        }
 
         buffer.clear();
         buffer.position(0);
+        buffer.put((byte) name.length());
         buffer.put(name.getBytes());
         buffer.position(16);
         buffer.putLong(length);
@@ -227,6 +259,11 @@ public class FSDirectory implements FSNode {
             throw new HardError(new FileSystemIoException("FS mutation detection: " + (int) dataBlock));
         disk.writeBlock((int) dataBlock, buffer, 0, buffer.capacity());
         fs.flush();
+    }
+
+    @Override
+    public boolean isOpen() {
+        return opened;
     }
 
     void rename(String name, FSFile fsFile) {

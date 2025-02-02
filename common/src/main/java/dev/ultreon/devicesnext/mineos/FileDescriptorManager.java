@@ -32,7 +32,6 @@ class FileDescriptorManager {
     public void free(FileDescriptor descriptor) {
         synchronized (this) {
             int index = descriptor.fd();
-            this.descriptors[index] = null;
             this.inUse.clear(index);
 
             descriptor.getFile().close();

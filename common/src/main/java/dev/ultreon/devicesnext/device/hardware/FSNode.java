@@ -1,6 +1,10 @@
 package dev.ultreon.devicesnext.device.hardware;
 
+import java.lang.ref.Cleaner;
+
 public interface FSNode {
+    static Cleaner CLEANER = Cleaner.create();
+
     void open();
     void close();
 
@@ -25,4 +29,6 @@ public interface FSNode {
     long getAddress();
 
     void flush();
+
+    boolean isOpen();
 }

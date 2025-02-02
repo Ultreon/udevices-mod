@@ -13,7 +13,7 @@ public class LibStd implements SystemLibrary {
     private final OperatingSystemImpl operatingSystem;
     private final FileDescriptorManager fdManager;
     public static final int O_CREAT = 0x4000;
-    public static final int O_RDONLY = 0x0000;
+    public static final int O_RDONLY = 0x0002;
     public static final int O_WRONLY = 0x0001;
     public static final int O_TRUNC = 0x2000;
     private String error = null;
@@ -46,13 +46,16 @@ public class LibStd implements SystemLibrary {
                 return -1;
             }
 
+            fsNode.open();
             if (!(fsNode instanceof FSDirectory fsDirectory)) {
                 this.error = "Not a directory: " + parent;
                 this.errno = 2;
                 return -1;
             }
 
+            fsDirectory.open();
             fsDirectory.createFile(fname(path));
+            fsDirectory.close();
         }
 
         FSNode fsNode = operatingSystem.getFileSystem().get(path);
@@ -123,6 +126,7 @@ public class LibStd implements SystemLibrary {
         buffer.flip();
         buffer.position(0);
         FileDescriptor fileDescriptor = operatingSystem.gerFdManager().get(fd);
+        fileDescriptor.truncate(fileDescriptor.tell() + buffer.capacity());
         fileDescriptor.write(buffer);
         return buffer.position();
     }
@@ -169,10 +173,6 @@ public class LibStd implements SystemLibrary {
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.open();
         String fname = fname(path);
         fsDirectory.createDirectory(fname);
-        FSDirectory child = (FSDirectory) fsDirectory.getChild(fname);
-        child.flush();
-        child.close();
-        fsDirectory.flush();
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.close();
 
         if (!(fsDirectory instanceof FSRoot)) fsDirectory.open();

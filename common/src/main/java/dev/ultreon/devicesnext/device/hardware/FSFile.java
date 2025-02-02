@@ -1,5 +1,6 @@
 package dev.ultreon.devicesnext.device.hardware;
 
+import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.mineos.Disk;
 import dev.ultreon.devicesnext.mineos.FileSystem;
 import dev.ultreon.devicesnext.mineos.FileSystemIoException;
@@ -8,6 +9,8 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
+
+import static dev.ultreon.devicesnext.mineos.Disk.BLOCK_SIZE;
 
 public class FSFile implements FSNode {
     private final Disk disk;
@@ -19,12 +22,13 @@ public class FSFile implements FSNode {
     private long oldLength = -1;
     String name = "";
     long length = -1;
-    long dataAddress = -1;
+    long dataBlock = -1;
     long created = -1;
     long lastAccessed = -1;
     long lastModified = -1;
     int blockCount;
     int mode;
+    private boolean opened = false;
 
     public FSFile(Disk disk, FileSystem fs, @NotNull FSDirectory parent, long address) {
         this.disk = disk;
@@ -32,27 +36,48 @@ public class FSFile implements FSNode {
         this.parent = parent;
         this.address = address;
 
-        disk.readBlock(Math.floorDiv(address, Disk.BLOCK_SIZE), buffer);
+        disk.readBlock(Math.floorDiv(address, BLOCK_SIZE), buffer);
         buffer.flip();
+        buffer.position(0);
 
+        byte b = buffer.get();
         byte[] dst = new byte[16];
-        buffer.get(0, dst);
-        this.name = new String(dst);
+        buffer.get(1, dst);
+        if (b > dst.length) {
+            UDevicesMod.LOGGER.warn("File name too long: " + b + " > " + dst.length);
+            dst = new byte[b];
+        }
+        this.name = new String(dst, 0, b);
+        buffer.position(17);
 
-        int idx = 16;
-        this.length = buffer.getLong(idx += Long.BYTES);
-        this.dataAddress = buffer.getLong(idx += Long.BYTES);
-        this.created = buffer.getLong(idx += Long.BYTES);
-        this.lastAccessed = buffer.getLong(idx += Long.BYTES);
-        this.lastModified = buffer.getLong(idx += Long.BYTES);
+        this.length = buffer.getLong();
+        this.dataBlock = buffer.getLong();
+        disk.isWithinSpace(dataBlock);
+
+        this.created = buffer.getLong();
+        this.lastAccessed = buffer.getLong();
+        this.lastModified = buffer.getLong();
         this.mode = buffer.getInt();
 
         buffer.clear();
     }
 
+    public FSFile(Disk disk, FileSystem fs, FSDirectory parent) {
+        this.disk = disk;
+        this.fs = fs;
+        this.parent = parent;
+        this.address = (long) fs.allocateBlock() * BLOCK_SIZE;
+        this.dataBlock = fs.allocateBlock();
+        this.opened = true;
+    }
+
     @Override
     public void open() {
-        disk.readBlock(Math.floorDiv(dataAddress, Disk.BLOCK_SIZE), buffer);
+        if (opened) return;
+
+        disk.readBlock(dataBlock, buffer);
+        buffer.flip();
+        buffer.position(0);
         this.blockCount = buffer.getInt();
         if (blockCount > Disk.BLOCK_SIZE / Integer.BYTES) {
             throw new FileSystemIoException("File exceeds max size of " + (Disk.BLOCK_SIZE / Integer.BYTES) + " blocks");
@@ -63,9 +88,12 @@ public class FSFile implements FSNode {
         }
 
         buffer.clear();
+        opened = true;
     }
 
     public void read(long offset, ByteBuffer buffer) {
+        if (!opened) throw new IllegalStateException("File node not opened!");
+
         int capacity = buffer.capacity();
         if (offset + capacity > this.length) {
             throw new FileSystemIoException("Offset " + (offset + capacity) + " exceeds file length " + this.length);
@@ -91,6 +119,7 @@ public class FSFile implements FSNode {
     }
 
     public void write(long offset, ByteBuffer buffer) {
+        if (!opened) throw new IllegalStateException("File node not opened!");
         int capacity = buffer.capacity();
         if (offset + capacity > this.length) {
             throw new FileSystemIoException("Offset " + (offset + capacity) + " exceeds file length " + this.length);
@@ -121,23 +150,15 @@ public class FSFile implements FSNode {
 
     @Override
     public void close() {
-        this.name = "";
-        this.length = -1;
-        this.dataAddress = -1;
-        this.created = -1;
-        this.lastAccessed = -1;
-        this.lastModified = -1;
-        this.blockCount = 0;
-        this.mode = 0;
+        opened = false;
     }
 
     public long getLength() {
         return length;
     }
 
-    public long setLength(long length) {
+    public void setLength(long length) {
         this.length = length;
-        return length;
     }
 
     @Override
@@ -162,32 +183,32 @@ public class FSFile implements FSNode {
 
     @Override
     public long getLastModified() {
-        return 0;
+        return lastModified;
     }
 
     @Override
     public long getLastAccessed() {
-        return 0;
+        return lastAccessed;
     }
 
     @Override
     public long getCreated() {
-        return 0;
+        return created;
     }
 
     @Override
     public void setLastAccessed(long lastAccessed) {
-
+        this.lastAccessed = lastAccessed;
     }
 
     @Override
     public void setLastModified(long lastModified) {
-
+        this.lastModified = lastModified;
     }
 
     @Override
     public void setCreated(long created) {
-
+        this.created = created;
     }
 
     @Override
@@ -197,13 +218,16 @@ public class FSFile implements FSNode {
 
     @Override
     public void flush() {
+        if (!opened) throw new IllegalStateException("File node not opened!");
         if (address == -1) return;
 
         buffer.clear();
+        buffer.position(0);
+        buffer.put((byte) name.length());
         buffer.put(name.getBytes());
-
+        buffer.position(16);
         buffer.putLong(length);
-        buffer.putLong(dataAddress);
+        buffer.putLong(dataBlock);
         buffer.putLong(created);
         buffer.putLong(lastAccessed);
         buffer.putLong(lastModified);
@@ -214,6 +238,9 @@ public class FSFile implements FSNode {
         if (length != oldLength) {
             if (length > oldLength) {
                 this.allocate(length - oldLength);
+            } else {
+                // TODO
+                throw new UnsupportedOperationException("TODO");
             }
         }
 
@@ -221,6 +248,8 @@ public class FSFile implements FSNode {
 
         buffer.clear();
         buffer.flip();
+        buffer.limit(BLOCK_SIZE);
+        buffer.position(0);
 
         buffer.putInt(blockCount);
         int blockIdx = 0;
@@ -229,21 +258,27 @@ public class FSFile implements FSNode {
             blockIdx++;
         }
         buffer.flip();
-        disk.writeBlock((int) Math.floorDiv(dataAddress, Disk.BLOCK_SIZE), buffer, 0, buffer.capacity());
+        disk.writeBlock((int) Math.floorDiv(dataBlock, Disk.BLOCK_SIZE), buffer, 0, buffer.capacity());
         fs.flush();
     }
 
+    @Override
+    public boolean isOpen() {
+        return opened;
+    }
+
     private void allocate(long amount) {
+        if (!opened) throw new IllegalStateException("File node not opened!");
         long remaining = (oldLength + amount) % Disk.BLOCK_SIZE;
         long blocks = Math.floorDiv(oldLength + amount - remaining, Disk.BLOCK_SIZE);
         for (long i = 0; i < blocks; i++) {
             this.blocks.add(fs.allocateBlock());
         }
         this.blockCount = (int) blocks;
-        this.flush();
     }
 
     public void rename(String name) {
+        if (!opened) throw new IllegalStateException("File node not opened!");
         parent.rename(name, this);
         this.name = name;
         this.parent.flush();
@@ -251,11 +286,13 @@ public class FSFile implements FSNode {
     }
 
     public void truncate(long length) {
+        if (!opened) throw new IllegalStateException("File node not opened!");
         this.length = length;
         this.flush();
     }
 
     public void delete() {
+        if (!opened) throw new IllegalStateException("File node not opened!");
         parent.delete(name);
     }
 
