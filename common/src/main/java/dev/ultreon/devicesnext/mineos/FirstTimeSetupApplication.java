@@ -45,6 +45,8 @@ class FirstTimeSetupApplication extends Application {
     }
 
     class FirstTimeSetupWindow extends Window {
+        private boolean canClose = false;
+
         public FirstTimeSetupWindow(OperatingSystemImpl operatingSystem, FirstTimeSetupApplication firstTimeSetupApplication) {
             super(firstTimeSetupApplication, 0, 0, operatingSystem.getWidth(), operatingSystem.getHeight(), "First Time Setup");
             this.setUndecorated(true);
@@ -62,7 +64,7 @@ class FirstTimeSetupApplication extends Application {
             aContinue.addClickHandler(button -> {
                 this.setup();
             });
-            this.addOnClosingListener(() -> false);
+            this.addOnClosingListener(() -> canClose);
         }
 
         private void setup() {
@@ -110,6 +112,18 @@ class FirstTimeSetupApplication extends Application {
 
                     jsBuf.clear();
                     jsonBuf.clear();
+
+                    int installedFlag = libStd.open("/data/installed", LibStd.O_CREAT | LibStd.O_WRONLY | LibStd.O_TRUNC);
+                    if (installedFlag == -1) {
+                        throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
+                    }
+                    libStd.write(installedFlag, ByteBuffer.wrap("true".getBytes()));
+                    libStd.close(installedFlag);
+
+                    this.canClose = true;
+                    application.quit();
+
+                    operatingSystem.login();
                 } catch (IOException e) {
                     libStd.close(notepadJs);
                     libStd.close(notepadJson);

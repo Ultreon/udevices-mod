@@ -86,6 +86,8 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     private V8Host host;
     private V8Runtime runtime;
     private long lastInstallCheck;
+    private boolean login = false;
+    private long loginTime;
 
     public OperatingSystemImpl(DeviceScreen screen, int width, int height, ArrayList<Window> windows, DesktopApplication desktopApp) {
         this(screen, 0, 0, width, height, windows, desktopApp);
@@ -807,5 +809,12 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
 
     public LibMineOS getMineOSLib() {
         return this.mineOSLib;
+    }
+
+    public void login() {
+        this.login = true;
+        this.loginTime = System.currentTimeMillis();
+
+        this._spawn(this.desktopApp, new String[0]);
     }
 }
