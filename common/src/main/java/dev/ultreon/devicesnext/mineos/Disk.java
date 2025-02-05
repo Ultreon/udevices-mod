@@ -93,7 +93,8 @@ public class Disk {
             try {
                 long pos = block * BLOCK_SIZE;
                 long endPos = pos + buffer.capacity();
-                if (endPos > this.length()) throw new FileSystemIoException("Attempted to read beyond disk space: " + endPos + " > " + this.length());
+                if (endPos > this.length())
+                    throw new FileSystemIoException("Attempted to read beyond disk space: " + endPos + " > " + this.length());
                 this.io.seek(pos);
                 byte[] buf = new byte[BLOCK_SIZE];
                 buffer.limit(BLOCK_SIZE);
@@ -147,7 +148,7 @@ public class Disk {
                 long start = (long) block * BLOCK_SIZE + offset;
                 if (start + length > length())
                     throw new FileSystemIoException("Attempted to write beyond disk space.");
-                this.io.seek((long) block * BLOCK_SIZE + offset);
+                this.io.seek((long) block * BLOCK_SIZE);
                 buffer.limit(length);
                 buffer.position(0);
                 byte[] buf = new byte[length];

@@ -4,7 +4,6 @@ import dev.ultreon.devicesnext.device.hardware.FSNode;
 import dev.ultreon.devicesnext.device.hardware.FSRoot;
 
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.BitSet;
 
 public class FileSystem {
@@ -85,7 +84,7 @@ public class FileSystem {
     }
 
     public int allocateBlock() {
-        int i = allocatedBlocks.nextClearBit(1);
+        int i = allocatedBlocks.nextClearBit(3);
         if (i == -1) {
             throw new FileSystemIoException("Out of disk space");
         }
@@ -119,7 +118,11 @@ public class FileSystem {
                     buffer.putLong(longArray[block]);
                 }
             }
-            disk.writeBlock((int) Math.floorDiv(i, Disk.BLOCK_SIZE), buffer, 0, Disk.BLOCK_SIZE);
+            int block = (int) Math.floorDiv(i, Disk.BLOCK_SIZE);
+            if (block == 0) {
+                throw new FileSystemIoException("Invalid address: " + i);
+            }
+            disk.writeBlock(block, buffer, 0, Disk.BLOCK_SIZE);
         }
 
         disk.flush();
@@ -151,7 +154,7 @@ public class FileSystem {
     }
 
     private static class FSHeader {
-        private final boolean initialized;
+        private boolean initialized;
         private final Disk disk;
         private final FileSystem fs;
 
@@ -162,7 +165,7 @@ public class FileSystem {
             disk.readBlock(0, buffer);
             buffer.flip();
 
-            byte[] dst = new byte[16];
+            byte[] dst = new byte["MineOSFS".length()];
             buffer.get(0, dst);
             String signature = new String(dst);
             this.initialized = signature.equals("MineOSFS");
@@ -178,6 +181,7 @@ public class FileSystem {
             buffer.put("MineOSFS".getBytes());
             buffer.flip();
             disk.writeBlock(0, buffer, 0, Disk.BLOCK_SIZE);
+            initialized = true;
         }
     }
 }

@@ -174,6 +174,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
 
     @SuppressWarnings("t")
     private void loadApps(V8Runtime runtime, JNEventLoop eventLoop) {
+        FSDirectory fsDirectory = null;
         try {
             FSNode fsNode = this.fileSystem.get("/data/appcfg/");
 
@@ -181,7 +182,8 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
                 return;
             }
 
-            FSDirectory fsDirectory = (FSDirectory) fsNode;
+            fsDirectory = (FSDirectory) fsNode;
+            fsDirectory.open();
 
             for (FSNode file : fsDirectory.list()) {
                 if (file.isDirectory()) {
@@ -234,7 +236,9 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
                     }
                 });
             }
+            fsDirectory.close();
         } catch (Throwable throwable) {
+            if (fsDirectory != null) fsDirectory.close();
             this._raiseHardError(throwable);
         }
     }
@@ -540,11 +544,6 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     @Override
     public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         gfx.fill(this.getX(), this.getY(), this.width, this.height, 0xff404040);
-        if (lastInstallCheck + 5000 < System.currentTimeMillis() && (!this.fileSystem.isInitialized() || !this.fileSystem.exists("/data/installed")) && this.windows.stream().noneMatch(window -> window instanceof FirstTimeSetupApplication.FirstTimeSetupWindow)) {
-            this._spawn(new FirstTimeSetupApplication(this, new ApplicationId("dev.ultreon:setup")), new String[0]);
-        } else {
-            lastInstallCheck =  System.currentTimeMillis();
-        }
         if (this.bsod != null) {
             long millisRemaining = this.shutdownTime - System.currentTimeMillis();
             if (millisRemaining < 0) {
@@ -568,6 +567,12 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             RenderSystem.disableDepthTest();
             RenderSystem.disableBlend();
             return;
+        }
+
+        if (lastInstallCheck + 5000 < System.currentTimeMillis() && (!this.fileSystem.isInitialized() || !this.fileSystem.exists("/data/installed")) && this.windows.stream().noneMatch(window -> window instanceof FirstTimeSetupApplication.FirstTimeSetupWindow)) {
+            this._spawn(new FirstTimeSetupApplication(this, new ApplicationId("dev.ultreon:setup")), new String[0]);
+        } else {
+            lastInstallCheck =  System.currentTimeMillis();
         }
 
 //        if (this.windows.isEmpty() && !this.shuttingDown) {
