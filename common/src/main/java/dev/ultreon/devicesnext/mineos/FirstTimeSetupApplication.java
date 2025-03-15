@@ -92,7 +92,8 @@ class FirstTimeSetupApplication extends Application {
                 if (notepadJs == -1) {
                     throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
                 }
-                int notepadJson = libStd.open("/data/appcfg/dev.ultreon:notepad.json", LibStd.O_CREAT | LibStd.O_WRONLY | LibStd.O_TRUNC);
+                int notepadJson = libStd.open("/apps/@ultreon/mineos/notepad.json", LibStd.O_CREAT | LibStd.O_WRONLY | LibStd.O_TRUNC);
+
                 if (notepadJson == -1) {
                     throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
                 }

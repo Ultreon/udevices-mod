@@ -7,7 +7,7 @@ import static dev.ultreon.devicesnext.mineos.Disk.BLOCK_SIZE;
 
 public class FSRoot extends FSDirectory {
     public FSRoot(Disk disk, FileSystem fs) {
-        super(disk, fs, null);
+        super(disk, fs, null, (long) fs.allocateBlock() * BLOCK_SIZE);
     }
 
     @Override

@@ -4,7 +4,6 @@ import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.mineos.Disk;
 import dev.ultreon.devicesnext.mineos.FileSystem;
 import dev.ultreon.devicesnext.mineos.FileSystemIoException;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArraySet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import org.jetbrains.annotations.NotNull;
@@ -19,11 +18,11 @@ public class FSFile implements FSNode {
     private final FSDirectory parent;
     private final long address;
     private final ByteBuffer buffer = ByteBuffer.allocate(Disk.BLOCK_SIZE);
-    private final IntArrayList blocks = IntArrayList.of();
-    private long oldLength = 0;
+    private final IntSet blocks = IntArraySet.of();
+    private long oldLength = -1;
     String name = "";
-    long length = 0;
-    long dataBlock;
+    long length = -1;
+    long dataBlock = -1;
     long created = -1;
     long lastAccessed = -1;
     long lastModified = -1;
@@ -42,14 +41,14 @@ public class FSFile implements FSNode {
         buffer.position(0);
 
         byte b = buffer.get();
-        byte[] dst = new byte[48];
+        byte[] dst = new byte[16];
         buffer.get(1, dst);
         if (b > dst.length) {
-            UDevicesMod.LOGGER.warn("File name too long: {} > {}", b, dst.length);
+            UDevicesMod.LOGGER.warn("File name too long: " + b + " > " + dst.length);
             dst = new byte[b];
         }
         this.name = new String(dst, 0, b);
-        buffer.position(49);
+        buffer.position(17);
 
         this.length = buffer.getLong();
         this.dataBlock = buffer.getLong();
@@ -146,13 +145,7 @@ public class FSFile implements FSNode {
     }
 
     private int blockForOffset(long offset) {
-        int blockHeaderIndex = (int) Math.floorDiv(offset, Disk.BLOCK_SIZE);
-        if (blockHeaderIndex >= blocks.size())
-            throw new FileSystemIoException("Offset " + offset + " (" + blockHeaderIndex + ") exceeds file length " + this.length + " (" + blocks.size() + " blocks)");
-        int result = blocks.getInt(blockHeaderIndex);
-        if (result == 0)
-            throw new FileSystemIoException("Invalid offset: " + offset);
-        return result;
+        return (int) Math.floorDiv(offset, Disk.BLOCK_SIZE);
     }
 
     @Override
@@ -164,31 +157,8 @@ public class FSFile implements FSNode {
         return length;
     }
 
-    public void setLength(long lengthIn) {
-        long len = length;
-        if (len > lengthIn) deallocate(len - lengthIn);
-        if (lengthIn > len) allocate(lengthIn - len);
-        length = lengthIn;
-
-        flush();
-    }
-
-    private void deallocate(long amount) {
-        IntSet droppedBlocks = IntArraySet.of();
-        int lastBlockIndex = (int) Math.floorDiv(length - amount, BLOCK_SIZE);
-        for (int i = 0; i < blocks.size(); i++) {
-            int block = blocks.getInt(i);
-            if (i >= lastBlockIndex) {
-                droppedBlocks.add(block);
-            }
-        }
-
-        this.blockCount = lastBlockIndex;
-
-        for (int block : droppedBlocks) {
-            fs.freeBlock(block);
-            blocks.removeInt(block);
-        }
+    public void setLength(long length) {
+        this.length = length;
     }
 
     @Override
@@ -250,13 +220,12 @@ public class FSFile implements FSNode {
     public void flush() {
         if (!opened) throw new IllegalStateException("File node not opened!");
         if (address == -1) return;
-        if (name.length() >= 48) throw new IllegalArgumentException("Name too long: " + name);
 
         buffer.clear();
         buffer.position(0);
         buffer.put((byte) name.length());
         buffer.put(name.getBytes());
-        buffer.position(49);
+        buffer.position(16);
         buffer.putLong(length);
         buffer.putLong(dataBlock);
         buffer.putLong(created);
@@ -264,11 +233,7 @@ public class FSFile implements FSNode {
         buffer.putLong(lastModified);
         buffer.putInt(mode);
         buffer.flip();
-        int block1 = (int) Math.floorDiv(address, BLOCK_SIZE);
-        if (block1 == 0) {
-            throw new FileSystemIoException("Invalid address: " + address);
-        }
-        disk.writeBlock(block1, buffer, 0, buffer.capacity());
+        disk.writeBlock((int) Math.floorDiv(address, Disk.BLOCK_SIZE), buffer, 0, buffer.capacity());
 
         if (length != oldLength) {
             if (length > oldLength) {
@@ -293,10 +258,7 @@ public class FSFile implements FSNode {
             blockIdx++;
         }
         buffer.flip();
-        if ((int) dataBlock == 0) {
-            throw new FileSystemIoException("Invalid data block: " + dataBlock);
-        }
-        disk.writeBlock((int) dataBlock, buffer, 0, buffer.capacity());
+        disk.writeBlock((int) Math.floorDiv(dataBlock, Disk.BLOCK_SIZE), buffer, 0, buffer.capacity());
         fs.flush();
     }
 
@@ -308,8 +270,8 @@ public class FSFile implements FSNode {
     private void allocate(long amount) {
         if (!opened) throw new IllegalStateException("File node not opened!");
         long remaining = (oldLength + amount) % Disk.BLOCK_SIZE;
-        long blocks = Math.floorDiv(oldLength + amount, Disk.BLOCK_SIZE);
-        for (long i = 0; i <= blocks; i++) {
+        long blocks = Math.floorDiv(oldLength + amount - remaining, Disk.BLOCK_SIZE);
+        for (long i = 0; i < blocks; i++) {
             this.blocks.add(fs.allocateBlock());
         }
         this.blockCount = (int) blocks;

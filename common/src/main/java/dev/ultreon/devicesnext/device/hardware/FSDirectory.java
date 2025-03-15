@@ -12,7 +12,6 @@ import java.util.WeakHashMap;
 
 import static dev.ultreon.devicesnext.mineos.Disk.BLOCK_SIZE;
 
-@SuppressWarnings("t")
 public class FSDirectory implements FSNode {
     private final Disk disk;
     private final FSDirectory parent;
@@ -47,7 +46,7 @@ public class FSDirectory implements FSNode {
         byte[] dst = new byte[16];
         buffer.get(1, dst);
         if (b > dst.length) {
-            UDevicesMod.LOGGER.warn("File name too long: {} > {}", b, dst.length);
+            UDevicesMod.LOGGER.warn("File name too long: " + b + " > " + dst.length);
             dst = new byte[b];
         }
         name = new String(dst, 0, b);
@@ -67,8 +66,8 @@ public class FSDirectory implements FSNode {
         disk = diskIn;
         fs = fsIn;
         parent = parentIn;
-        address = this instanceof FSRoot ? BLOCK_SIZE : (long) fsIn.allocateBlock() * BLOCK_SIZE;
-        dataBlock = this instanceof FSRoot ? 2 : fsIn.allocateBlock();
+        address = (long) fsIn.allocateBlock() * BLOCK_SIZE;
+        dataBlock = fsIn.allocateBlock();
         opened = true;
     }
 
@@ -76,7 +75,7 @@ public class FSDirectory implements FSNode {
     public void open() {
         if (opened && !(this instanceof FSRoot)) return;
 
-        if (dataBlock > 0 || (dataBlock == 0 && this instanceof FSRoot)) {
+        if (dataBlock > 0) {
             buffer.clear();
             disk.readBlock(dataBlock, buffer);
             buffer.flip();
@@ -100,7 +99,8 @@ public class FSDirectory implements FSNode {
 
             opened = true;
         } else {
-            throw new FileSystemIoException("Invalid data block: " + dataBlock);
+            children.clear();
+            flush();
         }
     }
 
@@ -241,11 +241,7 @@ public class FSDirectory implements FSNode {
         buffer.putLong(lastModified);
         buffer.putInt(0);
         buffer.flip();
-        int block = (int) Math.floorDiv(address, BLOCK_SIZE);
-        if (block == 0) {
-            throw new FileSystemIoException("Invalid address: " + address);
-        }
-        disk.writeBlock(block, buffer, 0, buffer.capacity());
+        disk.writeBlock((int) Math.floorDiv(address, BLOCK_SIZE), buffer, 0, buffer.capacity());
 
         buffer.clear();
         buffer.position(0);
