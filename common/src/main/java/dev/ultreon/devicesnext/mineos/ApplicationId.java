@@ -1,6 +1,6 @@
 package dev.ultreon.devicesnext.mineos;
 
-import net.minecraft.network.chat.Component;
+import net.minecraft.locale.Language;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -76,8 +76,8 @@ public class ApplicationId implements Comparable<ApplicationId> {
         return this.group + ":" + this.module;
     }
 
-    public Component getName() {
-        return Component.translatable("ultreonlib.application." + this.toString());
+    public String getName() {
+        return Language.getInstance().getOrDefault("ultreonlib.application." + this);
     }
 
     @Override

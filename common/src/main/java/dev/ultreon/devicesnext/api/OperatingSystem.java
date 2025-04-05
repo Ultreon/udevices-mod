@@ -1,6 +1,5 @@
 package dev.ultreon.devicesnext.api;
 
-import com.ultreon.mods.lib.util.KeyboardHelper;
 import dev.ultreon.devicesnext.mineos.*;
 import dev.ultreon.devicesnext.mineos.exception.McNoPermissionException;
 import dev.ultreon.devicesnext.mineos.exception.McSecurityException;
@@ -23,7 +22,7 @@ public interface OperatingSystem {
 
     void removeKeyboardHook(KeyboardHook keyboardHook);
 
-    KeyboardHelper.Modifier getMetaKey();
+    Modifier getMetaKey();
 
     static OperatingSystem get() {
         return OperatingSystemImpl.get();

@@ -2,8 +2,6 @@ package dev.ultreon.devicesnext.mineos.gui;
 
 import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.Icon;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -14,19 +12,11 @@ public class McButton extends McComponent {
     private Icon icon;
 
     public McButton(int x, int y, int width, int height, String text) {
-        this(x, y, width, height, Component.literal(text));
-    }
-
-    public McButton(int x, int y, int width, int height, Component message) {
-        this(x, y, width, height, message, null);
+        this(x, y, width, height, text, null);
     }
 
     public McButton(int i, int i1, int i2, int i3, String text, Icon icon) {
-        this(i, i1, i2, i3, Component.literal(text), icon);
-    }
-
-    public McButton(int x, int y, int width, int height, Component message, Icon icon) {
-        super(x, y, width, height, message);
+        super(i, i1, i2, i3, text);
         this.icon = icon;
     }
 
@@ -39,7 +29,7 @@ public class McButton extends McComponent {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         var background = 0xff444444;
         if (isMouseOver(mouseX, mouseY)) background = 0xff666666;
         if (isHolding()) background = 0xff222222;

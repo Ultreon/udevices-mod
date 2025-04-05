@@ -2,7 +2,7 @@ package dev.ultreon.devicesnext.device;
 
 import dev.ultreon.devicesnext.server.ServerGPU;
 import dev.ultreon.devicesnext.block.entity.LaptopBlockEntity;
-import dev.ultreon.devicesnext.device.hardware.HardwareComponent;
+import dev.ultreon.devicesnext.filesystem.HardwareComponent;
 import org.jnode.driver.DeviceAPI;
 
 import java.io.IOException;

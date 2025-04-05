@@ -1,12 +1,12 @@
 package dev.ultreon.devicesnext.block.entity;
 
 import dev.ultreon.devicesnext.UDevicesMod;
-import dev.ultreon.devicesnext.client.ClientDeviceManager;
 import dev.ultreon.devicesnext.client.DeviceManager;
 import dev.ultreon.devicesnext.cpu.CPU;
 import dev.ultreon.devicesnext.device.Laptop;
 import dev.ultreon.devicesnext.device.McDevice;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,8 +21,8 @@ public class LaptopBlockEntity extends DeviceBlockEntity {
     }
 
     @Override
-    public void load(CompoundTag compoundTag) {
-        super.load(compoundTag);
+    public void loadAdditional(CompoundTag compoundTag, HolderLookup.Provider registries) {
+        super.loadAdditional(compoundTag, registries);
 
         DeviceManager.get(level).unregisterDevice(this.getDevice(), this);
         DeviceManager.get(level).registerDevice(this.getDevice(), this);

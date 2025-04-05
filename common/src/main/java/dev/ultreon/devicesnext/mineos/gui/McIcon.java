@@ -1,8 +1,7 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import dev.ultreon.devicesnext.mineos.Icon;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
 public class McIcon extends McImage {
@@ -49,8 +48,8 @@ public class McIcon extends McImage {
     }
 
     @Override
-    public ResourceLocation getResource() {
-        return icon.resource();
+    public TextureRegion getResource() {
+        return icon.texture();
     }
 
     public Icon getIcon() {
@@ -62,8 +61,8 @@ public class McIcon extends McImage {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
-        ResourceLocation resource = getResource();
+    public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
+        TextureRegion resource = getResource();
         gfx.fill(0, 0, this.getWidth(), this.getHeight(), 0xff555555);
         gfx.fill(1, 1, this.getWidth() - 1, this.getHeight() - 1, 0xff333333);
 

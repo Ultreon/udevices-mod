@@ -1,17 +1,17 @@
 package dev.ultreon.devicesnext.client;
 
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
+import dev.ultreon.devicesnext.mineos.gui.McWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.NotNull;
 
-public class DisplayWidget extends AbstractWidget {
-    private static final ResourceLocation DYNAMIC_ID = new ResourceLocation("udevices:dynamic/display_framebuffer");
+public class DisplayWidget extends McWidget {
     private final GuiGraphics gfx;
     private final MultiBufferSource.BufferSource bufferSource;
     private final Minecraft minecraft;
@@ -20,13 +20,11 @@ public class DisplayWidget extends AbstractWidget {
     private boolean bound = false;
 
     public DisplayWidget(Screen screen, int x, int y, int width, int height) {
-        super(x, y, width, height, Component.empty());
+        super(x, y, width, height, "");
 
         minecraft = Minecraft.getInstance();
         font = minecraft.font;
-        frameBuffer = new FrameBuffer(screen.width, screen.height);
-
-        minecraft.getTextureManager().register(DYNAMIC_ID, frameBuffer);
+        frameBuffer = new FrameBuffer(Pixmap.Format.RGBA8888, screen.width, screen.height, true);
 
         bufferSource = minecraft.renderBuffers().bufferSource();
         gfx = new GuiGraphics(minecraft, bufferSource);
@@ -34,8 +32,7 @@ public class DisplayWidget extends AbstractWidget {
 
     public void close() {
         unbind();
-        frameBuffer.close();
-        minecraft.getTextureManager().release(DYNAMIC_ID);
+        frameBuffer.dispose();
     }
 
     private void unbind() {
@@ -53,7 +50,12 @@ public class DisplayWidget extends AbstractWidget {
     }
 
     public void resize(int width, int height) {
-        this.frameBuffer = new FrameBuffer(width, height);
+        if (width == this.width && height == this.height) return;
+        if (this.frameBuffer != null) this.frameBuffer.dispose();
+        this.frameBuffer = new FrameBuffer(Pixmap.Format.RGBA8888, width, height, true);
+
+        this.width = width;
+        this.height = height;
     }
 
     public void fillRect(int x, int y, int width, int height, int color) {
@@ -64,13 +66,8 @@ public class DisplayWidget extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int i, int j, float f) {
-        guiGraphics.blit(DYNAMIC_ID, getX(), getY(), width, height, 0, 0, width, height, width, height);
-    }
-
-    @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-        // No-op
+    protected void render(@NotNull GpuRenderer guiGraphics, int i, int j, float f) {
+        guiGraphics.blit(frameBuffer.getColorBufferTexture(), getX(), getY(), width, height, 0, 0, width, height, width, height);
     }
 
     public void boxRect(int x, int y, int width, int height, int color) {

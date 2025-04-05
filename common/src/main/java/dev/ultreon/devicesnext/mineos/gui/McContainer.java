@@ -2,8 +2,6 @@ package dev.ultreon.devicesnext.mineos.gui;
 
 import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.Insets;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,12 +15,12 @@ public abstract class McContainer extends McComponent {
     private Insets border = new Insets(0, 0, 0, 0);
     private int borderColor = 0x00000000;
     private McComponent focused;
-    public McContainer(int x, int y, int width, int height, Component message) {
+    public McContainer(int x, int y, int width, int height, String message) {
         super(x, y, width, height, message);
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         var innerX = 0 + getBorder().left();
         var innerY = 0 + getBorder().top();
         ScissorStack.scissor(gfx, 0, 0, getWidth(), getHeight(), () -> {
@@ -33,7 +31,7 @@ public abstract class McContainer extends McComponent {
         super.render(gfx, mouseX, mouseY, partialTicks);
     }
 
-    private void renderContents(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    private void renderContents(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         for (var child : children) {
             ScissorStack.scissor(gfx, child.getX(), child.getY(), child.getWidth(), child.getHeight(), () -> {
                 child.render(gfx, mouseX, mouseY, partialTicks);

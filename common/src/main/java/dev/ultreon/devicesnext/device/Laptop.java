@@ -1,19 +1,16 @@
 package dev.ultreon.devicesnext.device;
 
-import com.ultreon.mods.lib.util.ServerLifecycle;
-import dev.architectury.utils.Env;
-import dev.architectury.utils.EnvExecutor;
 import dev.ultreon.devicesnext.block.entity.LaptopBlockEntity;
 import dev.ultreon.devicesnext.client.ClientDeviceManager;
 import dev.ultreon.devicesnext.cpu.CPU;
-import dev.ultreon.devicesnext.device.hardware.Drive;
-import dev.ultreon.devicesnext.mineos.DeviceScreen;
+import dev.ultreon.devicesnext.mineos.VirtualComputer;
+import dev.ultreon.mods.xinexlib.Env;
+import dev.ultreon.mods.xinexlib.EnvExecutor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.util.UUID;
 
 public class Laptop extends McDevice {
@@ -31,18 +28,14 @@ public class Laptop extends McDevice {
             });
         }
 
-        try {
-            Drive drive = DriveManager.get(ServerLifecycle.getCurrentServer()).create(this, Drive.Class.MEDIUM);
-            GraphicsDevice gpu = new GraphicsDevice(laptopBlock, UUID.randomUUID());
-            this.registerComponent(drive);
-            this.registerComponent(gpu);
+//        Drive drive = DriveManager.get(UDevicesMod.getServer()).create(this, Drive.Class.MEDIUM);
+        GraphicsDevice gpu = new GraphicsDevice(laptopBlock, UUID.randomUUID());
+//        this.registerComponent(drive);
+        this.registerComponent(gpu);
 
-            this.registerAPI(Drive.class, drive);
-            this.registerAPI(GraphicsDevice.class, gpu);
-            this.registerAPI(CPU.class, laptopBlock.getCPU());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+//        this.registerAPI(Drive.class, drive);
+        this.registerAPI(GraphicsDevice.class, gpu);
+        this.registerAPI(CPU.class, laptopBlock.getCPU());
     }
 
     public LaptopBlockEntity getBlockEntity() {
@@ -75,7 +68,7 @@ public class Laptop extends McDevice {
     public void connectDisplay(@NotNull Player player) {
         super.connectDisplay(player);
 
-        DeviceScreen screen = new DeviceScreen(new DeviceScreen.LaunchOptions().fullscreen().title(Component.literal("MineOS")));
+        VirtualComputer screen = new VirtualComputer(new VirtualComputer.LaunchOptions().fullscreen().title(Component.literal("MineOS")));
         screen.open();
     }
 

@@ -1,10 +1,11 @@
 package dev.ultreon.devicesnext.mineos;
 
-import dev.ultreon.devicesnext.device.hardware.FSFile;
+import dev.ultreon.devicesnext.filesystem.FileSystemIoException;
+import dev.ultreon.devicesnext.filesystem.FSFile;
 
 import java.util.BitSet;
 
-class FileDescriptorManager {
+public class FileDescriptorManager {
     private static final int MAX_FILE_DESCRIPTORS = 256;
 
     private final FileDescriptor[] descriptors = new FileDescriptor[MAX_FILE_DESCRIPTORS];

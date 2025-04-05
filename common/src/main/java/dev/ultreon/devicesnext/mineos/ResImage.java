@@ -11,7 +11,7 @@ public class ResImage extends McComponent implements ResolutionImage {
     protected int textureWidth;
     protected int textureHeight;
 
-    public ResImage(int x, int y, int width, int height, int imageU, int imageV, int imageUWidth, int imageVHeight, int textureWidth, int textureHeight, Component altText) {
+    public ResImage(int x, int y, int width, int height, int imageU, int imageV, int imageUWidth, int imageVHeight, int textureWidth, int textureHeight, String altText) {
         super(x, y, width, height, altText);
         this.imageU = imageU;
         this.imageV = imageV;

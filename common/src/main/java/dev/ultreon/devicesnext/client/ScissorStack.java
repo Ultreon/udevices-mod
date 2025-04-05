@@ -1,23 +1,23 @@
 package dev.ultreon.devicesnext.client;
 
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.math.Vector3;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.ultreon.mods.lib.util.ScaledResolution;
-import org.joml.Vector3f;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.util.Stack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 
 public class ScissorStack {
+    private static final Vector3 position = new Vector3();
     public static Stack<Scissor> scissorStack = new Stack<>();
 
-    private static boolean pushScissorTranslated(PoseStack poseStack, int x, int y, int width, int height) {
-        var translation = poseStack.last().pose().getTranslation(new Vector3f());
+    private static boolean pushScissorTranslated(Batch poseStack, int x, int y, int width, int height) {
+        var translation = poseStack.getTransformMatrix().getTranslation(position);
         x += (int) translation.x;
         y += (int) translation.y;
 
@@ -36,8 +36,7 @@ public class ScissorStack {
         }
 
         var mc = Minecraft.getInstance();
-        var resolution = new ScaledResolution(mc);
-        var scale = resolution.getScaleFactor();
+        double scale = mc.getWindow().getGuiScale();
         GlStateManager._scissorBox((int) (x * scale), (int) (mc.getWindow().getHeight() - y * scale - height * scale), (int) Math.max(0, width * scale), (int) Math.max(0, height * scale));
         scissorStack.push(new Scissor(x, y, width, height));
         return true;
@@ -54,8 +53,7 @@ public class ScissorStack {
         if (!scissorStack.isEmpty()) {
             var scissor = scissorStack.peek();
             var mc = Minecraft.getInstance();
-            var resolution = new ScaledResolution(mc);
-            var scale = resolution.getScaleFactor();
+            var scale = mc.getWindow().getGuiScale();
             GlStateManager._scissorBox((int) (scissor.x * scale), (int) (mc.getWindow().getHeight() - scissor.y * scale - scissor.height * scale), (int) Math.max(0, scissor.width * scale), (int) Math.max(0, scissor.height * scale));
         } else {
             GlStateManager._disableScissorTest();
@@ -75,27 +73,27 @@ public class ScissorStack {
 
     public static Color getPixel(int x, int y) {
         var mc = Minecraft.getInstance();
-        var resolution = new ScaledResolution(mc);
-        var scale = resolution.getScaleFactor();
+        var scale = mc.getWindow().getGuiScale();
         var buffer = BufferUtils.createByteBuffer(3);
         RenderSystem.readPixels((int) (x * scale), (int) (mc.getWindow().getHeight() - y * scale - scale), 1, 1, GL11.GL_RGB, GL11.GL_BYTE, buffer);
         return new Color(Math.min(255, buffer.get(0) % 256*2), Math.min(255, buffer.get(1) % 256*2), Math.min(255, buffer.get(2) % 256*2));
     }
 
-    private static boolean pushScissorTranslated(GuiGraphics gfx, int x, int y, int width, int height) {
-        return pushScissorTranslated(gfx.pose(), x, y, width, height);
+    private static boolean pushScissorTranslated(GpuRenderer gfx, int x, int y, int width, int height) {
+        return pushScissorTranslated(gfx.getBatch(), x, y, width, height);
     }
 
-    public static void scissor(GuiGraphics graphics, int x, int y, int width, int height, Runnable func) {
+    public static void scissor(GpuRenderer graphics, int x, int y, int width, int height, Runnable func) {
         if (pushScissorTranslated(graphics, x, y, width, height)) {
             if (x != 0 || y != 0) {
-                graphics.pose().pushPose();
-                graphics.pose().translate(x, y, 0);
+                graphics.getBatch().setTransformMatrix(graphics.getBatch().getTransformMatrix().translate(x, y, 0));
             }
             try {
                 func.run();
             } finally {
-                if (x != 0 || y != 0) graphics.pose().popPose();
+                if (x != 0 || y != 0) {
+                    graphics.getBatch().setTransformMatrix(graphics.getBatch().getTransformMatrix().translate(-x, -y, 0));
+                }
                 popScissor();
             }
         }

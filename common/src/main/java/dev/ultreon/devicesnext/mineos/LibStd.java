@@ -1,13 +1,13 @@
 package dev.ultreon.devicesnext.mineos;
 
-import dev.ultreon.devicesnext.device.hardware.FSDirectory;
-import dev.ultreon.devicesnext.device.hardware.FSFile;
-import dev.ultreon.devicesnext.device.hardware.FSNode;
-import dev.ultreon.devicesnext.device.hardware.FSRoot;
+import dev.ultreon.devicesnext.filesystem.FileSystemIoException;
+import dev.ultreon.devicesnext.filesystem.FSDirectory;
+import dev.ultreon.devicesnext.filesystem.FSFile;
+import dev.ultreon.devicesnext.filesystem.FSNode;
+import dev.ultreon.devicesnext.filesystem.FSRoot;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 
 public class LibStd implements SystemLibrary {
     private final OperatingSystemImpl operatingSystem;

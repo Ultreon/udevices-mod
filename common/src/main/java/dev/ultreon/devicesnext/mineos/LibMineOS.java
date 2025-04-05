@@ -1,5 +1,7 @@
 package dev.ultreon.devicesnext.mineos;
 
+import dev.ultreon.devicesnext.filesystem.FileSystemIoException;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 

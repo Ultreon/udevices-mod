@@ -1,11 +1,10 @@
 package dev.ultreon.devicesnext.mineos;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import dev.ultreon.devicesnext.UDevicesMod;
-import dev.ultreon.devicesnext.client.ScissorStack;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import dev.ultreon.devicesnext.mineos.gui.McLabel;
 import dev.ultreon.devicesnext.mineos.sizing.IntSize;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,17 +17,13 @@ public class MessageDialog extends DialogWindow {
 
     private MessageDialog(@NotNull Application window, int width, int height, String title) {
         super(window, width, height, title);
-    }
 
-    private MessageDialog(@NotNull Application window, int width, int height, Component title) {
-        super(window, width, height, title);
-
-        this.description = this.add(new McLabel(24, 4, 0, this.font.lineHeight, ""));
+        this.description = this.add(new McLabel(24, 4, 0, (int) this.font.getLineHeight(), ""));
         this.setMaximizable(false);
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderBackground(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         super.renderBackground(gfx, mouseX, mouseY, partialTicks);
 
         final Icon icon = this.icon;
@@ -40,7 +35,7 @@ public class MessageDialog extends DialogWindow {
         }
 
         int descLength = this.description.getWidth();
-        var lines = this.description.getMessage().getString().replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+        var lines = this.description.getMessage().replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
         int textHeight = this.description.getHeight();
         if (textHeight < 16) {
             this.description.setY(4 + (textHeight - 9) / 2);
@@ -52,7 +47,7 @@ public class MessageDialog extends DialogWindow {
     @Override
     protected @Nullable IntSize getForceSize() {
         int descLength = this.description.getWidth();
-        var lines = this.description.getMessage().getString().replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+        var lines = this.description.getMessage().replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
         int textHeight = this.description.getHeight();
         if (icon != null) {
             this.description.setX(icon.width() + 8);
@@ -67,15 +62,15 @@ public class MessageDialog extends DialogWindow {
         return new IntSize(descLength + (icon != null ? icon.width() + 4 : 0) + 8, Math.max(this.description.getY() + this.description.getHeight() + 8, 24));
     }
 
-    public Component getDescription() {
+    public String getDescription() {
         return description.getMessage();
     }
 
-    public void setDescription(Component description) {
+    public void setDescription(String description) {
         this.description.setMessage(description);
     }
 
-    public static MessageDialog create(Application application, Icon icon, Component title, Component description) {
+    public static MessageDialog create(Application application, Icon icon, String title, String description) {
         MessageDialog dialog = new MessageDialog(application, 1, 1, title);
         dialog.setDescription(description);
         dialog.icon = icon;
@@ -138,6 +133,11 @@ public class MessageDialog extends DialogWindow {
         @Override
         public int texHeight() {
             return 16;
+        }
+
+        @Override
+        public TextureRegion texture() {
+            return new TextureRegion();
         }
     }
 }

@@ -1,0 +1,157 @@
+plugins {
+    id 'multiloader-loader'
+    id 'net.neoforged.moddev'
+
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+neoForge {
+    version = neoforge_version
+    // Automatically enable neoforge AccessTransformers if the file exists
+    def at = project(':common').file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.add(at.absolutePath)
+    }
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
+    runs {
+        configureEach {
+            systemProperty "neoforge.enabledGameTestNamespaces", mod_id.toString()
+            ideName = "NeoForge ${it.name.capitalize()} (${project.path})" // Unify the run config names with fabric
+        }
+        client {
+            client()
+        }
+        data {
+            data()
+        }
+        server {
+            server()
+        }
+    }
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+classes {
+    doLast {
+        copy {
+            from(project(":bootimage").sourceSets.main.output)
+            into(outputs)
+        }
+    }
+}
+
+configurations {
+    additionalClasspath {
+        extendsFrom api
+    }
+
+    clientAdditionalRuntimeClasspath.extendsFrom additionalClasspath
+    serverAdditionalRuntimeClasspath.extendsFrom additionalClasspath
+    dataAdditionalRuntimeClasspath.extendsFrom additionalClasspath
+}
+
+dependencies {
+    implementation("dev.ultreon.mods:xinexlib-neoforge-1.21.1:0.1.0-SNAPSHOT")
+    implementation("dev.ultreon:mcgdx-neoforge-1.21.1:0.1.0-SNAPSHOT")
+
+    compileOnly project(":bootimage")
+
+    api group: "io.github.llamalad7", name: 'mixinextras-neoforge', version: '0.4.1'
+    annotationProcessor group: "io.github.llamalad7", name: 'mixinextras-neoforge', version: '0.4.1'
+
+    jarJar(implementation("space.earlygrey:shapedrawer:$shapedrawer_version")) {
+        version {
+            // The version range your mod is actually compatible with.
+            // Note that you may receive a *lower* version than your preferred if another
+            // Mod is only compatible up to 1.7.24, for example, your mod might get 1.7.24 at runtime.
+            strictly "[$shapedrawer_version,3.0.0)"
+            prefer shapedrawer_version // The version actually used in your dev workspace
+        }
+    }
+    jarJar(implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version") {
+        exclude group: "org.lwjgl.lwjgl"
+        exclude group: "org.lwjgl"
+    }) {
+        version {
+            // The version range your mod is actually compatible with.
+            // Note that you may receive a *lower* version than your preferred if another
+            // Mod is only compatible up to 1.7.24, for example, your mod might get 1.7.24 at runtime.
+            strictly '[1.13.0,1.14.0)'
+            prefer '1.13.0' // The version actually used in your dev workspace
+        }
+    }
+    jarJar(implementation("com.badlogicgames.gdx:gdx:$gdx_version")) {
+        version {
+            // The version range your mod is actually compatible with.
+            // Note that you may receive a *lower* version than your preferred if another
+            // Mod is only compatible up to 1.7.24, for example, your mod might get 1.7.24 at runtime.
+            strictly '[1.13.0,1.14.0)'
+            prefer '1.13.0' // The version actually used in your dev workspace
+        }
+    }
+    jarJar(implementation("com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop")) {
+        version {
+            // The version range your mod is actually compatible with.
+            // Note that you may receive a *lower* version than your preferred if another
+            // Mod is only compatible up to 1.7.24, for example, your mod might get 1.7.24 at runtime.
+            strictly '[1.13.0,1.14.0)'
+            prefer '1.13.0' // The version actually used in your dev workspace
+        }
+    }
+
+
+    additionalClasspath("space.earlygrey:shapedrawer:$shapedrawer_version") {
+        version {
+            // The version range your mod is actually compatible with.
+            // Note that you may receive a *lower* version than your preferred if another
+            // Mod is only compatible up to 1.7.24, for example, your mod might get 1.7.24 at runtime.
+            strictly "[$shapedrawer_version,3.0.0)"
+            prefer shapedrawer_version // The version actually used in your dev workspace
+        }
+    }
+    additionalClasspath("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version") {
+        exclude group: "org.lwjgl.lwjgl"
+        exclude group: "org.lwjgl"
+    }
+    additionalClasspath("com.badlogicgames.gdx:gdx:$gdx_version")
+    additionalClasspath("com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop")
+
+    jarJar(implementation "org.graalvm.polyglot:polyglot:24.1.1") {
+        version {
+            // The version range your mod is actually compatible with.
+            // Note that you may receive a *lower* version than your preferred if another
+            // Mod is only compatible up to 1.7.24, for example, your mod might get 1.7.24 at runtime.
+            strictly '[24.1.1,25.0.0)'
+            prefer '24.1.1' // The version actually used in your dev workspace
+        }
+    }
+    jarJar(implementation "org.graalvm.python:python-community:24.1.1") {
+        version {
+            // The version range your mod is actually compatible with.
+            // Note that you may receive a *lower* version than your preferred if another
+            // Mod is only compatible up to 1.7.24, for example, your mod might get 1.7.24 at runtime.
+            strictly '[24.1.1,25.0.0)'
+            prefer '24.1.1' // The version actually used in your dev workspace
+        }
+    }
+
+
+    jarJar(implementation 'com.github.Nuix:jnode-fs:v1.0.1') {
+        version {
+            // The version range your mod is actually compatible with.
+            // Note that you may receive a *lower* version than your preferred if another
+            // Mod is only compatible up to 1.7.24, for example, your mod might get 1.7.24 at runtime.
+            strictly '[v1.0.1,v2.0.0)'
+            prefer 'v1.0.1' // The version actually used in your dev workspace
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }

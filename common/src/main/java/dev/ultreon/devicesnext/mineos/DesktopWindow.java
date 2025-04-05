@@ -2,9 +2,8 @@ package dev.ultreon.devicesnext.mineos;
 
 import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.api.Color;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import dev.ultreon.devicesnext.mineos.gui.McImage;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.resources.Resource;
 
 import java.io.File;
@@ -19,7 +18,7 @@ public class DesktopWindow extends Window {
     private Color backgroundColor;
 
     public DesktopWindow(DesktopApplication application) {
-        super(application, 0, 0, application.getSystem().getWidth(), application.getSystem().getHeight(), Component.empty());
+        super(application, 0, 0, application.getSystem().getWidth(), application.getSystem().getHeight(), "");
         this.setAbsolute(true);
 
         this.wallpaper = new McImage(0, 0, 0, 0);
@@ -52,7 +51,7 @@ public class DesktopWindow extends Window {
     }
 
     @Override
-    protected void renderBackground(GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    protected void renderBackground(GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         this.setX(0);
         this.setY(0);
         this.setWidth(this.getScreenWidth());

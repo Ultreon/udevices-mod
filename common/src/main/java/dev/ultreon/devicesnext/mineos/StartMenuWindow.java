@@ -1,13 +1,13 @@
 package dev.ultreon.devicesnext.mineos;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.mineos.exception.McAppNotFoundException;
 import dev.ultreon.devicesnext.mineos.exception.McNoPermissionException;
 import dev.ultreon.devicesnext.mineos.exception.McSecurityException;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import dev.ultreon.devicesnext.mineos.gui.McButton;
 import dev.ultreon.devicesnext.mineos.gui.McContainer;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
@@ -34,7 +34,7 @@ public abstract class StartMenuWindow extends Window {
             }
         });
 
-        McContainer list = new McContainer(0, 30, this.width, this.height - 64, Component.empty()) {
+        McContainer list = new McContainer(0, 30, this.width, this.height - 64, "") {
 
         };
 
@@ -50,7 +50,7 @@ public abstract class StartMenuWindow extends Window {
                     } catch (McAppNotFoundException | McNoPermissionException e) {
                         throw new RuntimeException(e);
                     } catch (McSecurityException e) {
-                        this.openDialog(MessageDialog.create(this.getApplication(), MessageDialog.Icons.ERROR, Component.literal("Error"), Component.literal("Can't open application!")));
+                        this.openDialog(MessageDialog.create(this.getApplication(), MessageDialog.Icons.ERROR, "Error", "Can't open application!"));
                     }
                 });
                 listY += 16;
@@ -62,10 +62,10 @@ public abstract class StartMenuWindow extends Window {
     }
 
     @Override
-    protected void renderBackground(GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    protected void renderBackground(GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         super.renderBackground(gfx, mouseX, mouseY, partialTicks);
 
-        gfx.drawString(this.font, this.minecraft.getUser().getName(), 10, 10, 0xffffff, true);
+        gfx.drawString(this.minecraft.getUser().getName(), 10, 10, 0xffffff, true);
     }
 
     @Override
@@ -129,6 +129,11 @@ public abstract class StartMenuWindow extends Window {
         @Override
         public int texHeight() {
             return SIZE;
+        }
+
+        @Override
+        public TextureRegion texture() {
+            return new TextureRegion();
         }
     }
 }

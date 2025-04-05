@@ -2,11 +2,10 @@ package dev.ultreon.devicesnext.mineos;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Queues;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import dev.ultreon.devicesnext.mineos.gui.McComponent;
 import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.sizing.IntSize;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
@@ -29,7 +28,7 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
     private final OperatingSystemImpl system;
 
     public WindowManager(int x, int y, int width, int height, List<Window> windows) {
-        super(x, y, width, height, Component.empty());
+        super(x, y, width, height, "");
         this.windows.addAll(new ArrayDeque<>(windows));
         this.midStack.addAll(windows);
         if (this instanceof OperatingSystemImpl operatingSystem) {
@@ -41,33 +40,35 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         this.renderWindows(gfx, mouseX, mouseY, partialTicks);
     }
 
-    private void renderWindows(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
-        gfx.pose().pushPose();
-        gfx.pose().scale(1, 1, 1 / 2000f);
-        synchronized (wmLock) {
-            renderWindowsBS(gfx, mouseX, mouseY, partialTicks);
-            renderWindowsNS(gfx, mouseX, mouseY, partialTicks);
-            renderWindowsTS(gfx, mouseX, mouseY, partialTicks);
+    private void renderWindows(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
+        gfx.scale(1, 1, 1 / 2000f);
+        try {
+            synchronized (wmLock) {
+                renderWindowsBS(gfx, mouseX, mouseY, partialTicks);
+                renderWindowsNS(gfx, mouseX, mouseY, partialTicks);
+                renderWindowsTS(gfx, mouseX, mouseY, partialTicks);
+            }
+        } finally {
+            gfx.scale(1, 1, -1 / 2000f);
         }
-        gfx.pose().popPose();
     }
 
-    private void renderWindowsNS(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    private void renderWindowsNS(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         var windows = new ArrayList<>(this.midStack);
         var hoveredWindow = getHoveredWindow(mouseX, mouseY);
         for (var i = windows.size() - 1; i > -1; i--) {
             var window = windows.get(i);
 
             renderWindow(gfx, mouseX, mouseY, partialTicks, window, hoveredWindow);
-            gfx.pose().translate(0, 0, 1);
+            gfx.translate(0, 0, 1);
         }
     }
 
-    private void renderWindow(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks, @NotNull Window window, Window hoveredWindow) {
+    private void renderWindow(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks, @NotNull Window window, Window hoveredWindow) {
         try {
             @NotNull Window _window = window;
             @Nullable DialogWindow dialog = _window.getDialog();
@@ -96,25 +97,25 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
         }
     }
 
-    private void renderWindowsTS(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    private void renderWindowsTS(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         var windows = new ArrayList<>(this.topStack);
         var hoveredWindow = getHoveredWindow(mouseX, mouseY);
         for (var i = windows.size() - 1; i > -1; i--) {
             var window = windows.get(i);
 
             renderWindow(gfx, mouseX, mouseY, partialTicks, window, hoveredWindow);
-            gfx.pose().translate(0, 0, 1);
+            gfx.translate(0, 0, 1);
         }
     }
 
-    private void renderWindowsBS(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    private void renderWindowsBS(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         var windows = new ArrayList<>(this.bottomStack);
         var hoveredWindow = getHoveredWindow(mouseX, mouseY);
         for (var i = windows.size() - 1; i > -1; i--) {
             var window = windows.get(i);
 
             renderWindow(gfx, mouseX, mouseY, partialTicks, window, hoveredWindow);
-            gfx.pose().translate(0, 0, 1);
+            gfx.translate(0, 0, 1);
         }
     }
 

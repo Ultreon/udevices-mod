@@ -3,8 +3,6 @@ package dev.ultreon.devicesnext.mineos.gui;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ultreon.devicesnext.mineos.Icon;
 import dev.ultreon.devicesnext.client.ScissorStack;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -15,12 +13,12 @@ public class McIconButton extends McComponent {
     private Icon icon;
 
     public McIconButton(int x, int y, Icon icon) {
-        super(x, y, icon.width() + 4, icon.height() + 4, Component.literal("Icon: " + icon.resource()));
+        super(x, y, icon.width() + 4, icon.height() + 4, "Icon: " + icon.resource());
         this.icon = icon;
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         var background = 0xff444444;
         if (isMouseOver(mouseX, mouseY)) background = 0xff666666;
         if (isHolding()) background = 0xff222222;

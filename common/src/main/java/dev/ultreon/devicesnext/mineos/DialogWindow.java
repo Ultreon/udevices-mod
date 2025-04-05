@@ -1,6 +1,5 @@
 package dev.ultreon.devicesnext.mineos;
 
-import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2d;
@@ -14,11 +13,7 @@ public class DialogWindow extends Window {
     private @Nullable Vector2d holdingTitleFrom;
     private @Nullable Vector2d holdingTitleSince;
 
-    public DialogWindow(@NotNull Application application , int width, int height, String title) {
-        super(application, 0, 0, width, height, title);
-    }
-
-    public DialogWindow(@NotNull Application application, int width, int height, Component title) {
+    public DialogWindow(@NotNull Application application, int width, int height, String title) {
         super(application, 0, 0, width, height, title);
     }
 

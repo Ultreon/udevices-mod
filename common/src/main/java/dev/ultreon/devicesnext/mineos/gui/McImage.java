@@ -1,15 +1,12 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
-import com.mojang.blaze3d.platform.NativeImage;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.mineos.ResImage;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.nbt.ByteArrayTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,38 +17,37 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
 public class McImage extends ResImage {
     private ImageLoader loader;
-    private ResourceLocation resource;
     private final List<ClickCallback> onClick = new ArrayList<>();
+    private Texture texture;
+    private TextureRegion textureRegion;
 
     public McImage() {
         this(0, 0, 0, 0);
     }
 
-    public McImage(Component altText) {
+    public McImage(String altText) {
         this(0, 0, 0, 0, altText);
     }
 
     public McImage(int x, int y, int width, int height) {
-        this(x, y, width, height, Component.empty());
+        this(x, y, width, height, "");
     }
 
-    public McImage(int x, int y, int width, int height, Component altText) {
+    public McImage(int x, int y, int width, int height, String altText) {
         super(x, y, width, height, 0, 0, width, height, width, height, altText);
     }
 
-    public final Component getAltText() {
+    public final String getAltText() {
         return getMessage();
     }
 
-    public final void setAltText(Component message) {
+    public final void setAltText(String message) {
         setMessage(message);
     }
 
@@ -132,26 +128,25 @@ public class McImage extends ResImage {
         this.loader.load();
     }
 
-    public ResourceLocation getResource() {
-        return resource;
+    public TextureRegion getResource() {
+        return textureRegion;
     }
 
-    public void setResource(ResourceLocation resource, int imageWidth, int imageHeight) {
-        this.resource = resource;
+    public void setResource(Texture resource, int imageWidth, int imageHeight) {
+        this.texture = resource;
+        this.textureRegion = new TextureRegion(resource);
         this.textureWidth = imageWidth;
         this.textureHeight = imageHeight;
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
-        ResourceLocation resource = getResource();
-
-        if (resource != null) {
-            gfx.blit(resource, getX(), getY(), getWidth(), getHeight(), 0, 0, textureWidth(), textureHeight(), textureWidth(), textureHeight());
+    public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
+        if (texture != null) {
+            gfx.blit(texture, getX(), getY(), getWidth(), getHeight(), 0, 0, textureWidth(), textureHeight(), textureWidth(), textureHeight());
         } else if (this.loader != null && this.loader.error != null) {
             gfx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xff555555);
             gfx.fill(getX() + 1, getY() + 1, getX() + getWidth() - 1, getY() + getHeight() - 1, 0xff333333);
-            drawCenteredStringWithoutShadow(gfx, font, Component.literal(loader.error.getLocalizedMessage()), getX() + getWidth() / 2, getY() + getHeight() / 2, 0xffffdddd);
+            gfx.drawCenteredStringWithoutShadow(font, loader.error.getLocalizedMessage(), getX() + getWidth() / 2, getY() + getHeight() / 2, 0xffffdddd);
         } else {
             gfx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xff555555);
             gfx.fill(getX() + 1, getY() + 1, getX() + getWidth() - 1, getY() + getHeight() - 1, 0xff333333);
@@ -159,7 +154,7 @@ public class McImage extends ResImage {
         }
     }
 
-    public static void drawLoadingIcon(GuiGraphics gfx, int x, int y) {
+    public static void drawLoadingIcon(GpuRenderer gfx, int x, int y) {
         var timeWrap = (int)(System.currentTimeMillis() % 1500);
         var frame = timeWrap / 500;
 
@@ -182,9 +177,7 @@ public class McImage extends ResImage {
         }
     }
 
-    @Override
     public void onLeftClick(int clicks) {
-        super.onLeftClick(clicks);
         boolean flag = false;
         for (var callback : onClick) {
             callback.onClick(this, clicks);
@@ -243,23 +236,23 @@ public class McImage extends ResImage {
 
         protected abstract String getSource();
 
-        protected final void register(NativeImage image, Consumer<ResourceLocation> callback) {
-            var minecraft = Minecraft.getInstance();
-            var textureManager = minecraft.getTextureManager();
+        protected final void register(Pixmap image, Consumer<Texture> callback) {
             minecraft.doRunTask(() -> {
-                var id = new UUID(System.nanoTime(), new Random().nextInt() ^ image.hashCode());
-                var location = textureManager.register("ultreonlib_dynamic/%s".formatted(id).replaceAll("-", ""), new DynamicTexture(image));
-                callback.accept(location);
+                Texture texture = new Texture(image);
+                callback.accept(texture);
+                image.dispose();
             });
         }
 
-        protected final void done(ResourceLocation res) {
-            McImage.this.resource = res;
+        protected final void done(Texture res) {
+            McImage.this.texture = res;
+            McImage.this.textureRegion = new TextureRegion(McImage.this.texture);
             this.loaded = true;
         }
 
         protected final void fail(IOException exception) {
-            McImage.this.resource = new ResourceLocation("minecraft:");
+            McImage.this.texture = null;
+            McImage.this.textureRegion = null;
             this.error = exception;
             this.loaded = true;
         }
@@ -278,9 +271,10 @@ public class McImage extends ResImage {
 
         @Override
         protected final void doLoad() throws IOException {
-            NativeImage image;
+            Pixmap image;
             try (InputStream stream = new FileInputStream(file)) {
-                image = NativeImage.read(stream);
+                byte[] bytes = stream.readAllBytes();
+                image = new Pixmap(bytes, 0, bytes.length);
             }
             register(image, res -> {
                 McImage.this.textureWidth = image.getWidth();
@@ -304,9 +298,10 @@ public class McImage extends ResImage {
 
         @Override
         protected final void doLoad() throws IOException {
-            NativeImage image;
+            Pixmap image;
             try (stream) {
-                image = NativeImage.read(this.stream);
+                byte[] bytes = stream.readAllBytes();
+                image = new Pixmap(bytes, 0, bytes.length);
             }
             register(image, res -> {
                 McImage.this.textureWidth = image.getWidth();
@@ -330,10 +325,7 @@ public class McImage extends ResImage {
 
         @Override
         protected final void doLoad() throws IOException {
-            NativeImage image;
-            try (InputStream stream = new ByteArrayInputStream(this.bytes)) {
-                image = NativeImage.read(stream);
-            }
+            Pixmap image = new Pixmap(this.bytes, 0, this.bytes.length);
             register(image, res -> {
                 McImage.this.textureWidth = image.getWidth();
                 McImage.this.textureHeight = image.getHeight();
@@ -357,7 +349,7 @@ public class McImage extends ResImage {
 
         @Override
         protected final void doLoad() throws IOException {
-            var image = NativeImage.read(this.buffer);
+            Pixmap image = new Pixmap(this.buffer);
             register(image, res -> {
                 McImage.this.textureWidth = image.getWidth();
                 McImage.this.textureHeight = image.getHeight();
@@ -380,9 +372,10 @@ public class McImage extends ResImage {
 
         @Override
         protected final void doLoad() throws IOException {
-            NativeImage image;
-            try (var stream = this.url.openStream()) {
-                image = NativeImage.read(stream);
+            Pixmap image;
+            try (InputStream stream = this.url.openStream()) {
+                byte[] bytes = stream.readAllBytes();
+                image = new Pixmap(bytes, 0, bytes.length);
             }
             register(image, res -> {
                 McImage.this.textureWidth = image.getWidth();

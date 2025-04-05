@@ -1,6 +1,7 @@
 package dev.ultreon.devicesnext.device;
 
-import dev.ultreon.devicesnext.device.hardware.HardwareComponent;
+import dev.ultreon.devicesnext.filesystem.DeviceLike;
+import dev.ultreon.devicesnext.filesystem.HardwareComponent;
 import net.minecraft.world.entity.player.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jnode.driver.virtual.VirtualDevice;
@@ -10,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public abstract class McDevice extends VirtualDevice {
+public abstract class McDevice extends VirtualDevice implements DeviceLike {
     private final List<HardwareComponent> components = new ArrayList<>();
     private final UUID uuid;
 

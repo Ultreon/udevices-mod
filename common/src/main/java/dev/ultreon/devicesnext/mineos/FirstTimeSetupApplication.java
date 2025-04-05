@@ -1,15 +1,18 @@
 package dev.ultreon.devicesnext.mineos;
 
+import com.badlogic.gdx.utils.GdxRuntimeException;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import dev.ultreon.devicesnext.mineos.gui.McButton;
 import dev.ultreon.devicesnext.mineos.gui.McLabel;
 import dev.ultreon.devicesnext.mineos.sizing.IntSize;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 class FirstTimeSetupApplication extends Application {
@@ -31,13 +34,13 @@ class FirstTimeSetupApplication extends Application {
             }
 
             @Override
-            protected void renderBackground(GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+            protected void renderBackground(GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
                 super.renderBackground(gfx, mouseX, mouseY, partialTicks);
                 gfx.fill(0, 0, width, height, 0xff4080f0);
             }
 
             @Override
-            protected @Nullable IntSize getForceSize() {
+            protected @NotNull IntSize getForceSize() {
                 return new IntSize(operatingSystem.getWidth(), operatingSystem.getHeight());
             }
         });
@@ -55,15 +58,13 @@ class FirstTimeSetupApplication extends Application {
             this.setTopMost(true);
             this.restore();
 
-            this.add(new McLabel(24, 24, 0, this.font.lineHeight, """
+            this.add(new McLabel(24, 24, 0, 11, """
                     Welcome to MineOS!
                     This is the first time you've run MineOS on this device.
                     This screen will guide you through the setup process.
                     """));
             McButton aContinue = this.add(new McButton(this.getWidth() - 94, this.getHeight() - 39, 70, 15, "Continue"));
-            aContinue.addClickHandler(button -> {
-                this.setup();
-            });
+            aContinue.addClickHandler(button -> this.setup());
             this.addOnClosingListener(() -> canClose);
         }
 
@@ -75,17 +76,17 @@ class FirstTimeSetupApplication extends Application {
                     operatingSystem.getFileSystem().initialize();
                 }
 
-                libStd.mkdir("/data", 0755);
-                libStd.mkdir("/data/appcfg", 0755);
-                libStd.mkdir("/data/apps", 0755);
-                libStd.mkdir("/data/kernel", 0755);
-                libStd.mkdir("/data/kernel/bin", 0755);
+                libStd.mkdir("/data", 493);
+                libStd.mkdir("/data/appcfg", 493);
+                libStd.mkdir("/data/apps", 493);
+                libStd.mkdir("/data/kernel", 493);
+                libStd.mkdir("/data/kernel/bin", 493);
 
-                if (libStd.mkdir("/apps", 0755) == -1)
+                if (libStd.mkdir("/apps", 493) == -1)
                     throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
-                if (libStd.mkdir("/apps/@ultreon", 0755) == -1)
+                if (libStd.mkdir("/apps/@ultreon", 493) == -1)
                     throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
-                if (libStd.mkdir("/apps/@ultreon/mineos", 0755) == -1)
+                if (libStd.mkdir("/apps/@ultreon/mineos", 493) == -1)
                     throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
 
                 int notepadJs = libStd.open("/apps/@ultreon/mineos/notepad.js", LibStd.O_CREAT | LibStd.O_WRONLY | LibStd.O_TRUNC);
@@ -98,41 +99,46 @@ class FirstTimeSetupApplication extends Application {
                     throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
                 }
 
-                try {
-                    String notepadJsString = new String(OperatingSystemImpl.class.getResourceAsStream("/notepad.js").readAllBytes());
-                    String notepadJsonString = new String(OperatingSystemImpl.class.getResourceAsStream("/notepad.json").readAllBytes());
+                String notepadJsString = new String(readResource("/notepad.js"));
+                String notepadJsonString = new String(readResource("/notepad.json"));
 
-                    ByteBuffer jsBuf = ByteBuffer.wrap(notepadJsString.getBytes());
-                    ByteBuffer jsonBuf = ByteBuffer.wrap(notepadJsonString.getBytes());
-                    libStd.write(notepadJs, jsBuf);
-                    libStd.write(notepadJson, jsonBuf);
+                ByteBuffer jsBuf = ByteBuffer.wrap(notepadJsString.getBytes());
+                ByteBuffer jsonBuf = ByteBuffer.wrap(notepadJsonString.getBytes());
+                libStd.write(notepadJs, jsBuf);
+                libStd.write(notepadJson, jsonBuf);
 
-                    libStd.close(notepadJs);
-                    libStd.close(notepadJson);
+                libStd.close(notepadJs);
+                libStd.close(notepadJson);
 
-                    jsBuf.clear();
-                    jsonBuf.clear();
+                jsBuf.clear();
+                jsonBuf.clear();
 
-                    int installedFlag = libStd.open("/data/installed", LibStd.O_CREAT | LibStd.O_WRONLY | LibStd.O_TRUNC);
-                    if (installedFlag == -1) {
-                        throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
-                    }
-                    libStd.write(installedFlag, ByteBuffer.wrap("true".getBytes()));
-                    libStd.close(installedFlag);
-
-                    this.canClose = true;
-                    application.quit();
-
-                    operatingSystem.login();
-                } catch (IOException e) {
-                    libStd.close(notepadJs);
-                    libStd.close(notepadJson);
-
-                    throw new RuntimeException(e);
+                int installedFlag = libStd.open("/data/installed", LibStd.O_CREAT | LibStd.O_WRONLY | LibStd.O_TRUNC);
+                if (installedFlag == -1) {
+                    throw new RuntimeException(libStd.strerror() + " (I/O error " + libStd.errno() + ")");
                 }
+                libStd.write(installedFlag, ByteBuffer.wrap("true".getBytes()));
+                libStd.close(installedFlag);
+
+                this.canClose = true;
+                application.quit();
+
+                operatingSystem.login();
             } catch (Throwable t) {
                 operatingSystem.getLogger().error("Whoops!", t);
-                openDialog(MessageDialog.create(application, MessageDialog.Icons.ERROR, Component.literal("Could not setup MineOS"), Component.literal(ChatFormatting.BOLD + t.getClass().getName() + "\n" + ChatFormatting.RESET + t.getMessage())));
+                openDialog(MessageDialog.create(application, MessageDialog.Icons.ERROR, "Could not setup MineOS", ChatFormatting.BOLD + t.getClass().getName() + "\n" + ChatFormatting.RESET + t.getMessage()));
+            }
+        }
+
+        private byte[] readResource(String path) {
+            try (InputStream is = FirstTimeSetupApplication.class.getResourceAsStream(path)) {
+                if (is != null) {
+                    return is.readAllBytes();
+                } else {
+                    throw new FileNotFoundException();
+                }
+            } catch (IOException e) {
+                throw new GdxRuntimeException("Failed to read resource: " + path, e);
             }
         }
 

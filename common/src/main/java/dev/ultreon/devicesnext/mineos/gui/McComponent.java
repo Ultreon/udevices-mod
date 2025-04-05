@@ -1,14 +1,11 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
-import com.ultreon.mods.lib.client.gui.widget.BaseWidget;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import dev.ultreon.devicesnext.api.OperatingSystem;
 import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.Insets;
 import net.minecraft.Util;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,18 +13,19 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Objects;
 
 
-public abstract class McComponent extends BaseWidget {
+public abstract class McComponent extends McWidget {
     private McContextMenu contextMenu;
     private boolean holding;
     @Nullable
     McContainer parent = null;
+    private final GlyphLayout layout = new GlyphLayout();
 
-    public McComponent(int x, int y, int width, int height, Component message) {
+    public McComponent(int x, int y, int width, int height, String message) {
         super(x, y, width, height, message);
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
 
     }
 
@@ -65,22 +63,13 @@ public abstract class McComponent extends BaseWidget {
         return holding;
     }
 
-    @Override
-    protected void updateWidgetNarration(@NotNull NarrationElementOutput output) {
-        defaultButtonNarrationText(output);
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
-    }
-
-    protected void renderScrollingString(@NotNull GuiGraphics guiGraphics, @NotNull Font font, int inset, int color) {
+    protected void renderScrollingString(@NotNull GpuRenderer guiGraphics, @NotNull BitmapFont font, int inset, int color) {
         int l = this.getWidth() - inset;
         renderScrollingString(guiGraphics, font, this.getMessage(), inset, 0, l, this.getHeight(), color);
     }
 
-    protected static void renderScrollingString(GuiGraphics gfx, Font font, @NotNull Component message, int x, int y, int width, int height, int color) {
-        int textWidth = font.width(message);
+    protected void renderScrollingString(GpuRenderer gfx, BitmapFont font, @NotNull String message, int x, int y, int width, int height, int color) {
+        int textWidth = width(message);
         int endY = y + height;
         Objects.requireNonNull(font);
         int textY = (endY - 9) / 2 + 1;
@@ -91,11 +80,14 @@ public abstract class McComponent extends BaseWidget {
             double tmp = Math.max((double) endX * (double) 0.5f, 3f);
             double textOffset = Math.sin((Math.PI / 2.0) * Math.cos((Math.PI * 2.0) * curSeconds / tmp)) / (double) 2f + (double) 0.5f;
             double actualTextX = Mth.lerp(textOffset, 0f, endX);
-            ScissorStack.scissor(gfx, x, y, width, height, () -> {
-                gfx.drawString(font, message, x - (int) actualTextX, textY, color);
-            });
+            ScissorStack.scissor(gfx, x, y, width, height, () -> gfx.drawString(message, x - (int) actualTextX, textY, color));
         } else {
-            gfx.drawCenteredString(font, message, (x + width) / 2, textY, color);
+            gfx.drawCenteredString(message, (x + width) / 2, textY, color);
         }
+    }
+
+    private int width(@NotNull String message) {
+        layout.setText(font, message);
+        return (int) layout.width;
     }
 }

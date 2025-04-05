@@ -1,11 +1,10 @@
 package dev.ultreon.devicesnext.mineos;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.mojang.blaze3d.systems.RenderSystem;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import dev.ultreon.devicesnext.mineos.gui.McComponent;
 import dev.ultreon.devicesnext.mineos.gui.McImage;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -16,13 +15,13 @@ public class StartButton extends McComponent {
     private final McImage image = new McImage();
     private final TaskbarWindow taskbar;
 
-    public StartButton(TaskbarWindow taskbar, int x, int y, int width, int height, Component text) {
+    public StartButton(TaskbarWindow taskbar, int x, int y, int width, int height, String text) {
         super(x, y, width, height, text);
         this.taskbar = taskbar;
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         gfx.fill(0, 0, this.width, this.height, 0xff101010);
         RenderSystem.enableBlend();
         gfx.setColor(1, 1, 1, isMouseOver(mouseX, mouseY) ? 1 : 0.5f);
@@ -33,6 +32,10 @@ public class StartButton extends McComponent {
         this.image.render(gfx, mouseX, mouseY, partialTicks);
         gfx.setColor(1, 1, 1, 1);
         RenderSystem.disableBlend();
+    }
+
+    private boolean isMouseOver(int mouseX, int mouseY) {
+        return mouseX >= this.getX() && mouseX < this.getX() + this.getWidth() && mouseY >= this.getY() && mouseY < this.getY() + this.getHeight();
     }
 
     @Override
@@ -46,7 +49,7 @@ public class StartButton extends McComponent {
         this.callback = callback;
     }
 
-    public void loadIcon(ResourceLocation location, int width, int height) {
+    public void loadIcon(Texture location, int width, int height) {
         this.image.setResource(location, width, height);
     }
 

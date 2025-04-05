@@ -8,7 +8,7 @@ import java.util.List;
 public class McContextMenu extends McComponent {
     private final List<McMenuItem> items = Lists.newArrayList();
 
-    public McContextMenu(int x, int y, int width, int height, Component message) {
+    public McContextMenu(int x, int y, int width, int height, String message) {
         super(x, y, width, height, message);
     }
 

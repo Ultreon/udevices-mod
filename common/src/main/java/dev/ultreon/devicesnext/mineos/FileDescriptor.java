@@ -1,6 +1,7 @@
 package dev.ultreon.devicesnext.mineos;
 
-import dev.ultreon.devicesnext.device.hardware.FSFile;
+import dev.ultreon.devicesnext.filesystem.FileSystemIoException;
+import dev.ultreon.devicesnext.filesystem.FSFile;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;

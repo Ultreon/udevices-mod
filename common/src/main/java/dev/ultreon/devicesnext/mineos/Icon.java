@@ -1,6 +1,7 @@
 package dev.ultreon.devicesnext.mineos;
 
-import net.minecraft.client.gui.GuiGraphics;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import net.minecraft.resources.ResourceLocation;
 
 public interface Icon {
@@ -14,13 +15,15 @@ public interface Icon {
     int texWidth();
     int texHeight();
 
-    default void render(GuiGraphics gfx, int x, int y) {
-        ResourceLocation resource = this.resource();
-        gfx.blit(resource, x, y, width(), height(), u(), v(), uWidth(), vHeight(), texWidth(), texHeight());
+    default void render(GpuRenderer gfx, int x, int y) {
+//        ResourceLocation resource = this.resource();
+//        gfx.blit(resource, x, y, width(), height(), u(), v(), uWidth(), vHeight(), texWidth(), texHeight());
     }
 
-    default void render(GuiGraphics gfx, int x, int y, int width, int height) {
-        ResourceLocation resource = this.resource();
-        gfx.blit(resource, x, y, width, height, u(), v(), uWidth(), vHeight(), texWidth(), texHeight());
+    default void render(GpuRenderer gfx, int x, int y, int width, int height) {
+//        ResourceLocation resource = this.resource();
+//        gfx.blit(resource, x, y, width, height, u(), v(), uWidth(), vHeight(), texWidth(), texHeight());
     }
+
+    TextureRegion texture();
 }

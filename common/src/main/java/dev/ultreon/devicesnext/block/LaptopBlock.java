@@ -4,7 +4,6 @@ import dev.ultreon.devicesnext.block.entity.LaptopBlockEntity;
 import dev.ultreon.devicesnext.device.Laptop;
 import dev.ultreon.devicesnext.device.McDevice;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -29,7 +28,7 @@ public class LaptopBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
 
         builder.add(OPEN);
@@ -41,14 +40,14 @@ public class LaptopBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public @NotNull InteractionResult use(@NotNull BlockState blockState, @NotNull Level level, @NotNull BlockPos blockPos, @NotNull Player player, @NotNull InteractionHand interactionHand, @NotNull BlockHitResult blockHitResult) {
-        BlockEntity blockEntity = level.getBlockEntity(blockPos);
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity instanceof LaptopBlockEntity laptopBlockEntity) {
             McDevice device = laptopBlockEntity.getDevice();
             if (device instanceof Laptop laptop) {
                 if (player.isShiftKeyDown()) {
-                    toggleOpen(blockState, level, blockPos, player, device);
-                } else if (level.isClientSide && blockState.getValue(BlockStateProperties.OPEN)) {
+                    toggleOpen(state, level, pos, player, device);
+                } else if (level.isClientSide && state.getValue(BlockStateProperties.OPEN)) {
                     connectDisplay(player, device);
                 }
             }

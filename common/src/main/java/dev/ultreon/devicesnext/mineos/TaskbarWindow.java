@@ -3,9 +3,7 @@ package dev.ultreon.devicesnext.mineos;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ultreon.devicesnext.UDevicesMod;
-import com.ultreon.mods.lib.util.KeyboardHelper;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
+import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2i;
 
@@ -15,7 +13,7 @@ public final class TaskbarWindow extends Window {
     private StartMenuWindow startMenu;
 
     public TaskbarWindow(Application application, int size) {
-        super(application, 0, application.getSystem().getHeight() - size, application.getSystem().getWidth(), size, Component.empty());
+        super(application, 0, application.getSystem().getHeight() - size, application.getSystem().getWidth(), size, "");
         this.addOnClosingListener(() -> false);
 
         this.setAbsolute(true);
@@ -24,8 +22,8 @@ public final class TaskbarWindow extends Window {
 
         this.size = size;
 
-        this.startButton = this.add(new StartButton(this, 0, 0, this.size, this.size, Component.literal("Start Menu")));
-        this.startButton.loadIcon(UDevicesMod.res("textures/gui/device/taskbar/icon.png"), 16, 16);
+        this.startButton = this.add(new StartButton(this, 0, 0, this.size, this.size, "Start Menu"));
+        this.startButton.loadIcon(UDevicesMod.texture("textures/gui/device/taskbar/icon.png"), 16, 16);
         this.startButton.setCallback(this::openStartMenu);
     }
 
@@ -36,7 +34,7 @@ public final class TaskbarWindow extends Window {
         this.getApplication().getSystem().addKeyboardHook(new KeyboardHook() {
             @Override
             public KeyboardHook keyPressed(int keyCode, int scanCode, int modifiers, KeyboardHook next) {
-                if (keyCode == InputConstants.KEY_A && KeyboardHelper.isKeyDown(getApplication().getSystem().getMetaKey())) {
+                if (keyCode == InputConstants.KEY_A && dev.ultreon.devicesnext.mineos.KeyboardHelper.isKeyDown(getApplication().getSystem().getMetaKey())) {
                     openStartMenu();
                     return null;
                 }
@@ -88,8 +86,7 @@ public final class TaskbarWindow extends Window {
         return size;
     }
 
-    @Override
-    protected void renderBackground(GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    protected void renderBackground(GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         this.setWidth(this.getScreenWidth());
         this.setHeight(this.size);
         this.setX(0);
