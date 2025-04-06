@@ -17,30 +17,29 @@ neoForge {
 }
 
 dependencies {
-    compileOnlyApi group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
+    compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     // fabric and neoforge both bundle mixinextras, so it is safe to use it in common
-    compileOnlyApi group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.4.1'
+    compileOnly group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.4.1'
     annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.4.1'
 
     compileOnly project(":bootimage")
 
-    implementation("dev.ultreon.mods:xinexlib-common-1.21.1:0.1.0-SNAPSHOT")
-    implementation("dev.ultreon:mcgdx-common-1.21.1:0.1.0-SNAPSHOT")
-    implementation("org.graalvm.polyglot:polyglot:24.1.1")
-    implementation("org.graalvm.python:python-community:24.1.1")
+    compileOnly("dev.ultreon.mods:xinexlib-common-1.21.1:0.1.0-SNAPSHOT")
+    compileOnly("dev.ultreon:mcgdx-common-1.21.1:0.1.0-SNAPSHOT")
+    compileOnly("org.graalvm.polyglot:polyglot:24.1.1")
+    compileOnly("org.graalvm.python:python-community:24.1.1")
 
     // Extra dependencies
-    library("io.projectreactor:reactor-core:3.5.5")
-    library("org.hjson:hjson:3.1.0")
-    library("space.earlygrey:shapedrawer:$shapedrawer_version")
-    implementation api(library("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version") {
+    compileOnly "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version", {
         exclude group: "org.lwjgl.lwjgl"
         exclude group: "org.lwjgl"
-    })
+    }
 
-    implementation api(library('com.github.Nuix:jnode-fs:v1.0.1'))
-    implementation api(library("com.badlogicgames.gdx:gdx:$gdx_version"))
-    implementation api(library("com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop"))
+    compileOnly 'com.github.Nuix:jnode-fs:v1.0.1', {
+        exclude group: "com.google.guava"
+    }
+    compileOnly "com.badlogicgames.gdx:gdx:$gdx_version"
+    compileOnly "com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop"
 }
 
 classes {

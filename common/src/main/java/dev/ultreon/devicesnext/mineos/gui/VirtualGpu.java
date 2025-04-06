@@ -1,14 +1,19 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.IntMap;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.mineos.VirtualComputer;
 import org.jetbrains.annotations.ApiStatus;
+import space.earlygrey.shapedrawer.ShapeDrawer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,10 +31,25 @@ public class VirtualGpu {
     private final IntMap<Texture> textures = new IntMap<>();
     private String error;
     private int errno;
+    private final ShapeDrawer shapes;
+    private final Batch batch;
 
     public VirtualGpu(GpuRenderer gpuRenderer, VirtualComputer computer) {
         this.gpuRenderer = gpuRenderer;
         this.computer = computer;
+
+        this.batch = new SpriteBatch();
+        this.shapes = new ShapeDrawer(batch, createWhitePixel());
+    }
+
+    private TextureRegion createWhitePixel() {
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGB888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        TextureRegion region = new TextureRegion(texture);
+        pixmap.dispose();
+        return region;
     }
 
     public String getError() {
@@ -105,7 +125,7 @@ public class VirtualGpu {
     }
 
     private void onGpu(Runnable o) {
-        gpuRenderer.begin();
+        gpuRenderer.begin(shapes, batch);
         o.run();
         gpuRenderer.end();
     }

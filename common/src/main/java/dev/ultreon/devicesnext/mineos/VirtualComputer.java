@@ -1,7 +1,12 @@
 package dev.ultreon.devicesnext.mineos;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.utils.BufferUtils;
 import com.badlogic.gdx.utils.IntMap;
+import com.mojang.blaze3d.platform.GlStateManager;
 import dev.ultreon.devicesnext.filesystem.*;
 import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.api.OperatingSystem;
@@ -31,6 +36,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.nio.IntBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,6 +73,7 @@ public class VirtualComputer extends GdxScreen {
     private final FS fs;
     private final VirtualFileSystem virtualFS = new VirtualFileSystem(this);
     private final VirtualBiosApi virtualBiosApi = new VirtualBiosApi(this);
+    private final IntBuffer intBuffer = BufferUtils.newIntBuffer(1);
 
     public VirtualComputer(LaunchOptions options) {
         super(options.title);
@@ -276,6 +283,8 @@ public class VirtualComputer extends GdxScreen {
             this.desktopX = (this.width - this.desktopWidth) / 2;
             this.desktopY = (this.height - this.desktopHeight) / 2;
         }
+
+        this.gfx.reconnectDisplay(this.width, this.height);
     }
 
     @SafeVarargs
@@ -299,14 +308,26 @@ public class VirtualComputer extends GdxScreen {
             scale = minecraft.getWindow().getGuiScale();
         }
 
-        gfx.begin();
-        gfx.clear(1, 1, 1, 1);
+        System.out.println("{PRE_BEGIN} GlStateManager.getBoundFramebuffer() = " + GlStateManager.getBoundFramebuffer());
+        gfx.getDisplayBuffer().begin();
+        gfx.begin(shapeDrawer, batch);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+        batch.setProjectionMatrix(batch.getProjectionMatrix().setToOrtho2D(0, 0, 50, 50));
+        batch.begin();
+        shapeDrawer.filledCircle(5, 5, 10, Color.SKY);
+        gfx.fill(10, 10, 40, 40, 0, 1, 1, 1);
+        gfx.renderOutline(25, 25, 40, 40, 1, 0, 0, 1);
+        batch.end();
+        batch.setProjectionMatrix(batch.getProjectionMatrix().setToOrtho2D(0, Gdx.graphics.getBackBufferHeight(), Gdx.graphics.getBackBufferWidth(), -Gdx.graphics.getBackBufferHeight()));
         gfx.end();
+        gfx.getDisplayBuffer().end();
 
-//        batch.begin();
-//        batch.draw(gfx.getDisplayTexture(), 0, (float) height / 2, 30, 30);
-//        batch.end();
+        batch.begin();
+        batch.draw(gfx.getDisplayTexture(), 0, 0, 800, 600);
+        batch.end();
     }
+
 
     public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
         double[] xPos = new double[1];

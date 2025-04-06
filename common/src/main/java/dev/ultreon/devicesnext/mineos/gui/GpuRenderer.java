@@ -12,8 +12,8 @@ import org.jetbrains.annotations.ApiStatus;
 import space.earlygrey.shapedrawer.ShapeDrawer;
 
 public class GpuRenderer implements Disposable {
-    private final Batch batch;
-    private final ShapeDrawer shapes;
+    private Batch batch;
+    private ShapeDrawer shapes;
     private Texture whiteTexture;
     private final BitmapFont font = new BitmapFont();
     private final GlyphLayout layout = new GlyphLayout();
@@ -25,9 +25,6 @@ public class GpuRenderer implements Disposable {
         vGpu = new VirtualGpu(this, computer);
 
         frameBuffer = new FrameBuffer(Pixmap.Format.RGB888, 800, 600, true);
-
-        this.batch = new SpriteBatch();
-        this.shapes = new ShapeDrawer(batch, createWhitePixel());
     }
 
     private TextureRegion createWhitePixel() {
@@ -41,13 +38,15 @@ public class GpuRenderer implements Disposable {
         return region;
     }
 
-    public void begin() {
-        frameBuffer.begin();
-        batch.begin();
+    public void begin(ShapeDrawer shapeDrawer, Batch batch) {
+        this.batch = batch;
+        this.shapes = shapeDrawer;
+        this.batch.setProjectionMatrix(this.batch.getProjectionMatrix().setToOrtho2D(0, 0, 800, 600));
     }
 
     public void end() {
-        batch.end();
+        shapes = null;
+        batch = null;
         frameBuffer.end();
     }
 
@@ -101,27 +100,27 @@ public class GpuRenderer implements Disposable {
     }
 
     public void fill(float x, float y, float width, float height, int color) {
-        Color.argb8888ToColor(this.colorTmp, color);
-        if (colorTmp.a == 0) colorTmp.a = 1;
-        batch.setColor(colorTmp);
-        shapes.filledRectangle(x, y, width, height, colorTmp);
+        shapes.setColor(color(color));
+        shapes.filledRectangle(x, y, width, height);
+    }
+
+    private Color color(int color) {
+        return color <= 0xffffff ? colorTmp.set((float) (color >> 16 & 0xff) / 255, (float) (color >> 8 & 0xff) / 255, (float) (color & 0xff) / 255, 1f) : colorTmp.set((float) (color >> 16 & 0xff) / 255, (float) (color >> 8 & 0xff) / 255, (float) (color & 0xff) / 255, (float) (color >> 24 & 0xff) / 255);
     }
 
     public void fill(float x, float y, float width, float height, float r, float g, float b, float a) {
-        if (colorTmp.a == 0) colorTmp.a = 1;
-        batch.setColor(r, g, b, a);
-        shapes.filledRectangle(x, y, width, height, colorTmp);
+        shapes.setColor(r, g, b, a);
+        shapes.filledRectangle(x, y, width, height);
     }
 
     public void renderOutline(float x, float y, float width, float height, int color) {
-        Color.argb8888ToColor(this.colorTmp, color);
-        batch.setColor(colorTmp);
-        shapes.rectangle(x, y, width, height, colorTmp);
+        shapes.setColor(color(color));
+        shapes.rectangle(x, y, width, height);
     }
 
     public void renderOutline(float x, float y, float width, float height, float r, float g, float b, float a) {
-        batch.setColor(r, g, b, a);
-        shapes.rectangle(x, y, width, height, colorTmp);
+        shapes.setColor(colorTmp.set(r, g, b, a));
+        shapes.rectangle(x, y, width, height);
     }
 
     public void translate(int x, int y, int z) {
@@ -226,7 +225,15 @@ public class GpuRenderer implements Disposable {
         ScreenUtils.clear(0, 0, 0, 1);
     }
 
-    public void clear(int r, int g, int b, int a) {
+    public void clear(float r, float g, float b, float a) {
         ScreenUtils.clear(r, g, b, a);
+    }
+
+    public void reconnectDisplay(int width, int height) {
+
+    }
+
+    public FrameBuffer getDisplayBuffer() {
+        return this.frameBuffer;
     }
 }

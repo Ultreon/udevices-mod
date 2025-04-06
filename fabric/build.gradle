@@ -27,7 +27,6 @@ dependencies {
     implementation(api(library("com.badlogicgames.gdx:gdx:$gdx_version")))
     implementation(api(library("com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop")))
     library('io.projectreactor:reactor-core:3.5.5')
-    library('org.reactivestreams:reactive-streams:1.0.4')
     library('org.hjson:hjson:3.1.0')
 
     include(implementation(api(library('com.github.Nuix:jnode-fs:v1.0.1'))))
