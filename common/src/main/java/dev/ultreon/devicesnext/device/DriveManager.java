@@ -1,8 +1,9 @@
 package dev.ultreon.devicesnext.device;
 
-import dev.architectury.event.events.common.LifecycleEvent;
 import dev.ultreon.devicesnext.device.hardware.Drive;
 import dev.ultreon.devicesnext.device.hardware.MCHardDrive;
+import dev.ultreon.mods.xinexlib.event.server.ServerStoppedEvent;
+import dev.ultreon.mods.xinexlib.event.system.EventSystem;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 
@@ -15,10 +16,10 @@ public class DriveManager {
     private static DriveManager instance;
 
     static {
-        LifecycleEvent.SERVER_STOPPED.register(DriveManager::unload);
+        EventSystem.MAIN.on(ServerStoppedEvent.class, DriveManager::unload);
     }
 
-    private static void unload(MinecraftServer server) {
+    private static void unload(ServerStoppedEvent event) {
         instance = null;
     }
 

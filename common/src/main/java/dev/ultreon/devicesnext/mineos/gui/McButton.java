@@ -39,7 +39,7 @@ public class McButton extends McComponent {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         var background = 0xff444444;
         if (isMouseOver(mouseX, mouseY)) background = 0xff666666;
         if (isHolding()) background = 0xff222222;

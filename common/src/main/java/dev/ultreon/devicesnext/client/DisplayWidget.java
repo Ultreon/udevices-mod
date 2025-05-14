@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 public class DisplayWidget extends AbstractWidget {
-    private static final ResourceLocation DYNAMIC_ID = new ResourceLocation("udevices:dynamic/display_framebuffer");
+    private static final ResourceLocation DYNAMIC_ID = ResourceLocation.parse("udevices:dynamic/display_framebuffer");
     private final GuiGraphics gfx;
     private final MultiBufferSource.BufferSource bufferSource;
     private final Minecraft minecraft;

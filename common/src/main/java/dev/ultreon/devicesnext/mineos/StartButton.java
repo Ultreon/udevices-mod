@@ -22,7 +22,7 @@ public class StartButton extends McComponent {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         gfx.fill(0, 0, this.width, this.height, 0xff101010);
         RenderSystem.enableBlend();
         gfx.setColor(1, 1, 1, isMouseOver(mouseX, mouseY) ? 1 : 0.5f);
@@ -30,7 +30,7 @@ public class StartButton extends McComponent {
         this.image.setY((this.height - this.image.getHeight()) / 2);
         this.image.setWidth(16);
         this.image.setHeight(16);
-        this.image.render(gfx, mouseX, mouseY, partialTicks);
+        this.image.renderComponent(gfx, mouseX, mouseY, partialTicks);
         gfx.setColor(1, 1, 1, 1);
         RenderSystem.disableBlend();
     }

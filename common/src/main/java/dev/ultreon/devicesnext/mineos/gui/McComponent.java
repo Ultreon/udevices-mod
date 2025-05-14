@@ -1,6 +1,5 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
-import com.ultreon.mods.lib.client.gui.widget.BaseWidget;
 import dev.ultreon.devicesnext.api.OperatingSystem;
 import dev.ultreon.devicesnext.client.ScissorStack;
 import dev.ultreon.devicesnext.mineos.Insets;
@@ -26,16 +25,26 @@ public abstract class McComponent extends BaseWidget {
         super(x, y, width, height, message);
     }
 
-    @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
 
     }
 
+    @Override
+    protected void renderWidget(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+        this.renderComponent(gfx, mouseX, mouseY, partialTicks);
+    }
+
     public final int getScreenWidth() {
+        if (OperatingSystem.get() == null) {
+            return 0;
+        }
         return OperatingSystem.get().getWidth();
     }
 
     public final int getScreenHeight() {
+        if (OperatingSystem.get() == null) {
+            return 0;
+        }
         return OperatingSystem.get().getHeight();
     }
 
@@ -66,8 +75,8 @@ public abstract class McComponent extends BaseWidget {
     }
 
     @Override
-    protected void updateWidgetNarration(@NotNull NarrationElementOutput output) {
-        defaultButtonNarrationText(output);
+    protected void updateWidgetNarration(@NotNull NarrationElementOutput narrationOutput) {
+        defaultButtonNarrationText(narrationOutput);
     }
 
     public void setHeight(int height) {

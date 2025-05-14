@@ -1,27 +1,22 @@
 package dev.ultreon.devicesnext.network;
 
-import com.ultreon.mods.lib.network.api.Network;
-import com.ultreon.mods.lib.network.api.PacketRegisterContext;
 import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.network.packets.GfxCallPacket;
+import dev.ultreon.devicesnext.network.packets.GfxCallbackPacket;
+import dev.ultreon.mods.xinexlib.network.Networker;
+import dev.ultreon.mods.xinexlib.platform.XinexPlatform;
 
-public class UDevicesNet extends Network {
-    private static Network instance;
+public class UDevicesNet {
+    private static final Networker instance = XinexPlatform.createNetworker(UDevicesMod.MOD_ID, networkRegistry -> {
+        networkRegistry.registerClient("gfx_call", GfxCallPacket.class, GfxCallPacket::read);
+        networkRegistry.registerServer("gfx_callback", GfxCallbackPacket.class, GfxCallbackPacket::read);
+    });
 
-    private UDevicesNet() {
-        super(UDevicesMod.MOD_ID, "main");
-    }
-
-    public static Network get() {
+    public static Networker get() {
         return instance;
     }
 
     public static void setup() {
-        instance = new UDevicesNet();
-    }
-
-    @Override
-    protected void registerPackets(PacketRegisterContext ctx) {
-        ctx.register(GfxCallPacket::read);
+        // Do nothing
     }
 }

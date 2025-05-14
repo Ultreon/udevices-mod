@@ -1,15 +1,14 @@
 package dev.ultreon.devicesnext.mineos;
 
 import com.google.common.collect.Lists;
-import com.ultreon.mods.lib.client.gui.screen.BaseScreen;
 import dev.ultreon.devicesnext.api.OperatingSystem;
 import dev.ultreon.devicesnext.client.ScissorStack;
+import dev.ultreon.devicesnext.client.gui.BaseScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.phys.Vec2;
 import org.apache.commons.compress.utils.Sets;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -85,7 +84,7 @@ public class DeviceScreen extends BaseScreen {
 
     @Override
     public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
-        this.renderBackground(gfx);
+        this.renderBackground(gfx, mouseX, mouseY, partialTicks);
 
         double[] xPos = new double[1];
         double[] yPos = new double[1];
@@ -103,14 +102,14 @@ public class DeviceScreen extends BaseScreen {
         int finalMouseY = mouseY;
 
         if (!this.desktopFullscreen) {
-            BaseScreen.renderFrame(gfx, this.desktopX - 8, this.desktopY - 8, this.desktopWidth + 16, this.desktopHeight + 16, this.getTheme());
+            BaseScreen.renderFrame(gfx, this.desktopX - 8, this.desktopY - 8, this.desktopWidth + 16, this.desktopHeight + 16);
         }
 
         try {
             ScissorStack.scissor(gfx, this.desktopX, this.desktopY, this.desktopWidth, this.desktopHeight, () -> {
                 this.system.setWidth(this.width);
                 this.system.setHeight(this.height);
-                this.system.render(gfx, finalMouseX - this.desktopX, finalMouseY - this.desktopY, partialTicks);
+                this.system.renderComponent(gfx, finalMouseX - this.desktopX, finalMouseY - this.desktopY, partialTicks);
             });
         } catch (Throwable throwable) {
             this.system._raiseHardError(throwable);
@@ -118,29 +117,21 @@ public class DeviceScreen extends BaseScreen {
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics gfx) {
+    public void renderBackground(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         if (!this.desktopFullscreen) {
             if (this.back != null) {
                 gfx.pose().pushPose();
                 gfx.pose().translate(0, 0, -2000);
 
-                this.back.render(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, minecraft.getDeltaFrameTime());
+                this.back.render(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, partialTicks);
 
                 gfx.pose().popPose();
             }
 
-            super.renderBackground(gfx);
+            super.renderBackground(gfx, mouseX, mouseY, partialTicks);
         } else {
-            super.renderBackground(gfx);
+            super.renderBackground(gfx, mouseX, mouseY, partialTicks);
         }
-    }
-
-    /**
-     * @return always null, we don't need a close button on a device screen.
-     */
-    @Override
-    public @Nullable Vec2 getCloseButtonPos() {
-        return null;
     }
 
     /**
@@ -172,8 +163,8 @@ public class DeviceScreen extends BaseScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amountY) {
-        return isMouseOverDisplay(mouseX, mouseY) && system.mouseScrolled(mouseX - desktopX, mouseY - desktopY, amountY);
+    public boolean mouseScrolled(double mouseX, double mouseY, double amountX, double amountY) {
+        return isMouseOverDisplay(mouseX, mouseY) && system.mouseScrolled(mouseX - desktopX, mouseY - desktopY, amountX, amountY);
     }
 
     private boolean isMouseOverDisplay(double mouseX, double mouseY) {
@@ -208,6 +199,10 @@ public class DeviceScreen extends BaseScreen {
 
     public @Nullable Application getKernel() {
         return kernel;
+    }
+
+    public void open() {
+        Minecraft.getInstance().setScreen(this);
     }
 
     public static class LaunchOptions {

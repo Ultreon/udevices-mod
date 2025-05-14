@@ -51,7 +51,7 @@ public class McLabel extends McComponent {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         ScissorStack.scissor(gfx, 0, 0, this.width, this.height, () -> {
             String message = getMessage().getString();
             List<String> lines = message.lines().toList();

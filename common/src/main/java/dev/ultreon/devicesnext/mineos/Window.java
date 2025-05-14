@@ -89,7 +89,7 @@ public class Window extends McContainer {
     }
 
     @Override
-    public final void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public final void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         int mx = mouseX, my = mouseY;
 
         if (this.isDialogOver(mx, my)) {
@@ -103,7 +103,7 @@ public class Window extends McContainer {
 
         ScissorStack.scissor(gfx, this.getX() + getBorder().left(), this.getY() + getBorder().top(), this.getWidth(), this.getHeight(), () -> {
             this.renderBackground(gfx, finalMouseX, finalMouseY, partialTicks);
-            super.render(gfx, finalMouseX, finalMouseY, partialTicks);
+            super.renderComponent(gfx, finalMouseX, finalMouseY, partialTicks);
         });
 
     }
@@ -149,22 +149,22 @@ public class Window extends McContainer {
             int tcr = this.getX() + this.getWidth() + 1; // Title Controls Right
             if (this.isMouseOver(mouseX, mouseY, tcr - 23, this.getY() + 1, 23, 12)) {
                 gfx.fill(tcr - 23, this.getY() + 1, tcr, this.getY() + 13, 0x33ffffff);
-                drawCenteredStringWithoutShadow(gfx, this.font, "×", tcr - 11, this.getY() + 3, 0xffffffff);
-            } else drawCenteredStringWithoutShadow(gfx, this.font, "×", tcr - 11, this.getY() + 3, 0xffffffff);
+                gfx.drawCenteredString(this.font, "×", tcr - 11, this.getY() + 3, 0xffffffff);
+            } else gfx.drawCenteredString(this.font, "×", tcr - 11, this.getY() + 3, 0xffffffff);
 
             if (isMaximizable()) {
                 tcr -= 23;
                 if (this.isMouseOver(mouseX, mouseY, tcr - 23, this.getY() + 1, 23, 12)) {
                     gfx.fill(tcr - 23, this.getY() + 1, tcr, this.getY() + 13, 0x33ffffff);
-                    drawCenteredStringWithoutShadow(gfx, this.font, "□", tcr - 11, this.getY() + 3, 0xffffffff);
-                } else drawCenteredStringWithoutShadow(gfx, this.font, "□", tcr - 11, this.getY() + 3, 0xffffffff);
+                    gfx.drawCenteredString(this.font, "□", tcr - 11, this.getY() + 3, 0xffffffff);
+                } else gfx.drawCenteredString(this.font, "□", tcr - 11, this.getY() + 3, 0xffffffff);
             }
 
             tcr -= 23;
             if (this.isMouseOver(mouseX, mouseY, tcr - 23, this.getY() + 1, 23, 12)) {
                 gfx.fill(tcr - 23, this.getY() + 1, tcr, this.getY() + 13, 0x33ffffff);
-                drawCenteredStringWithoutShadow(gfx, this.font, "-", tcr - 11, this.getY() + 3, 0xffffffff);
-            } else drawCenteredStringWithoutShadow(gfx, this.font, "-", tcr - 11, this.getY() + 3, 0xffffffff);
+                gfx.drawCenteredString(this.font, "-", tcr - 11, this.getY() + 3, 0xffffffff);
+            } else gfx.drawCenteredString(this.font, "-", tcr - 11, this.getY() + 3, 0xffffffff);
             RenderSystem.disableBlend();
         }
     }
@@ -375,12 +375,12 @@ public class Window extends McContainer {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amountY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amountX, double amountY) {
         DialogWindow dialogWindow = this.dialogWindowAt(mouseX, mouseY);
         if (dialogWindow != null) {
-            return dialogWindow.mouseScrolled(mouseX, mouseY, amountY);
+            return dialogWindow.mouseScrolled(mouseX, mouseY, amountX, amountY);
         }
-        return super.mouseScrolled(mouseX, mouseY, amountY);
+        return super.mouseScrolled(mouseX, mouseY, amountX, amountY);
     }
 
     @Override

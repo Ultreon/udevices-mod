@@ -41,7 +41,7 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         this.renderWindows(gfx, mouseX, mouseY, partialTicks);
     }
 
@@ -77,8 +77,8 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
                 if (forceSize != null) _window.resize(forceSize.width, forceSize.height);
                 @Nullable Vector2i forcePosition = _window.getForcePosition();
                 if (forcePosition != null) _window.setPosition(forcePosition.x, forcePosition.y);
-                _window.render(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, partialTicks);
-                _window.getDialog().render(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, partialTicks);
+                _window.renderComponent(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, partialTicks);
+                _window.getDialog().renderComponent(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, partialTicks);
 
                 _window = dialog;
                 dialog = _window.getDialog();
@@ -88,8 +88,8 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
             if (forceSize != null) _window.resize(forceSize.width, forceSize.height);
             @Nullable Vector2i forcePosition = _window.getForcePosition();
             if (forcePosition != null) _window.setPosition(forcePosition.x, forcePosition.y);
-            if (_window.equals(hoveredWindow)) _window.render(gfx, mouseX, mouseY, partialTicks);
-            else _window.render(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, partialTicks);
+            if (_window.equals(hoveredWindow)) _window.renderComponent(gfx, mouseX, mouseY, partialTicks);
+            else _window.renderComponent(gfx, Integer.MAX_VALUE, Integer.MAX_VALUE, partialTicks);
         } catch (Exception e) {
             ScissorStack.clearScissorStack();
             crashApplication(window.application, e);
@@ -352,11 +352,11 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amountX) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amountX, double amountY) {
         synchronized (this.wmLock) {
             for (var window : this.windows()) {
                 try {
-                    if (window.isMouseOver(mouseX, mouseY) && window.mouseScrolled(mouseX, mouseY, amountX)) {
+                    if (window.isMouseOver(mouseX, mouseY) && window.mouseScrolled(mouseX, mouseY, amountX, amountY)) {
                         return true;
                     }
                 } catch (Exception e) {
@@ -364,7 +364,7 @@ abstract sealed class WindowManager extends McComponent permits OperatingSystemI
                     return false;
                 }
             }
-            return super.mouseScrolled(mouseX, mouseY, amountX);
+            return super.mouseScrolled(mouseX, mouseY, amountX, amountY);
         }
     }
 

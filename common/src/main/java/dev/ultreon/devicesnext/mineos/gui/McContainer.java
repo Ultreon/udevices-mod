@@ -22,7 +22,7 @@ public abstract class McContainer extends McComponent {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         var innerX = 0 + getBorder().left();
         var innerY = 0 + getBorder().top();
         ScissorStack.scissor(gfx, 0, 0, getWidth(), getHeight(), () -> {
@@ -30,13 +30,13 @@ public abstract class McContainer extends McComponent {
             var translatedY = mouseY - 0 - this.getBorder().top();
             renderContents(gfx, translatedX, translatedY, partialTicks);
         });
-        super.render(gfx, mouseX, mouseY, partialTicks);
+        super.renderComponent(gfx, mouseX, mouseY, partialTicks);
     }
 
     private void renderContents(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         for (var child : children) {
             ScissorStack.scissor(gfx, child.getX(), child.getY(), child.getWidth(), child.getHeight(), () -> {
-                child.render(gfx, mouseX, mouseY, partialTicks);
+                child.renderComponent(gfx, mouseX, mouseY, partialTicks);
             });
         }
     }
@@ -150,7 +150,7 @@ public abstract class McContainer extends McComponent {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amountY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amountX, double amountY) {
         if (!isMouseOver(mouseX, mouseY)) {
             return false;
         }
@@ -159,11 +159,11 @@ public abstract class McContainer extends McComponent {
         var translatedY = mouseY - getY() - this.getBorder().top();
         for (var child : this.children) {
             if (child.isMouseOver(translatedX, translatedY)) {
-                child.mouseScrolled(translatedX, translatedY, amountY);
+                child.mouseScrolled(translatedX, translatedY, amountX, amountY);
                 break;
             }
         }
-        return super.mouseScrolled(mouseX, mouseY, amountY);
+        return super.mouseScrolled(mouseX, mouseY, amountX, amountY);
     }
 
     @Override

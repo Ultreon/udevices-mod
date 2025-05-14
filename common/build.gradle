@@ -1,49 +1,60 @@
-architectury {
-    common(enabled_platforms.split(","))
+plugins {
+    id 'multiloader-common'
+    id 'net.neoforged.moddev'
+}
+
+neoForge {
+    neoFormVersion = neo_form_version
+    // Automatically enable AccessTransformers if the file exists
+    def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+    if (at.exists()) {
+        accessTransformers.add(at.absolutePath)
+    }
+    parchment {
+        minecraftVersion = parchment_minecraft
+        mappingsVersion = parchment_version
+    }
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+    compileOnlyApi group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
+    // fabric and neoforge both bundle mixinextras, so it is safe to use it in common
+    compileOnlyApi group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.4.1'
+    annotationProcessor group: 'io.github.llamalad7', name: 'mixinextras-common', version: '0.4.1'
 
-    // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
-    // Do NOT use other classes from fabric loader
-    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
-    // Remove the next line if you don't want to depend on the API
-    modApi "dev.architectury:architectury:${architectury_version}"
+    implementation("dev.ultreon.mods:xinexlib-common-1.21.1:0.1.0-SNAPSHOT")
+    implementation("dev.ultreon:mcgdx-common-1.21.1:0.1.0-SNAPSHOT")
 
-    modApi "dev.ultreon.ultreonlib:ultreon-lib:$ultreonlib_version", {
-        exclude group: 'net.fabricmc'
-        exclude group: 'dev.ultreon', module: "ultreon-data"
-        exclude group: 'dev.ultreon.corelibs'
-    }
+    // Extra dependencies
+    library("io.projectreactor:reactor-core:3.5.5")
+    library("org.hjson:hjson:3.1.0")
+    library("space.earlygrey:shapedrawer:$shapedrawer_version")
+    library("org.ow2.asm:asm:9.6")
+    implementation api(library("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version") {
+        exclude group: "org.lwjgl.lwjgl"
+        exclude group: "org.lwjgl"
+    })
 
-    // Javet
-    implementation 'com.caoccao.javet:javet:4.1.1'
-    implementation 'com.caoccao.javet:javenode:0.8.0'
-    implementation 'com.caoccao.javet:javet-node-linux-arm64:4.1.1'
-    implementation 'com.caoccao.javet:javet-node-linux-x86_64:4.1.1'
-    implementation 'com.caoccao.javet:javet-node-macos-arm64:4.1.1'
-    implementation 'com.caoccao.javet:javet-node-macos-x86_64:4.1.1'
-    implementation 'com.caoccao.javet:javet-node-windows-x86_64:4.1.1'
+    implementation api(library('com.github.Nuix:jnode-fs:v1.0.1'))
+    implementation api(library("com.badlogicgames.gdx:gdx:$gdx_version"))
+    implementation api(library("com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop"))
 }
 
-test {
-    useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
     }
 }
 
-publishing {
-    publications {
-        mavenCommon(MavenPublication) {
-            artifactId = archives_base_name
-            from components.java
-        }
-    }
-
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-    }
+artifacts {
+    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+}
+repositories {
+    mavenCentral()
 }

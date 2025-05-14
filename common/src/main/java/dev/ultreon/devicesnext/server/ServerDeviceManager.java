@@ -1,9 +1,12 @@
 package dev.ultreon.devicesnext.server;
 
-import dev.architectury.event.events.common.LifecycleEvent;
+import com.google.common.eventbus.EventBus;
 import dev.ultreon.devicesnext.block.entity.DeviceBlockEntity;
 import dev.ultreon.devicesnext.client.DeviceManager;
 import dev.ultreon.devicesnext.device.McDevice;
+import dev.ultreon.mods.xinexlib.event.server.ServerStartedEvent;
+import dev.ultreon.mods.xinexlib.event.server.ServerStoppedEvent;
+import dev.ultreon.mods.xinexlib.event.system.EventSystem;
 import net.minecraft.server.MinecraftServer;
 
 import java.io.IOException;
@@ -16,8 +19,8 @@ public class ServerDeviceManager implements DeviceManager {
     private static ServerDeviceManager instance;
 
     static {
-        LifecycleEvent.SERVER_STARTED.register(ServerDeviceManager::create);
-        LifecycleEvent.SERVER_STOPPING.register(ServerDeviceManager::unload);
+        EventSystem.MAIN.on(ServerStartedEvent.class, ServerDeviceManager::create);
+        EventSystem.MAIN.on(ServerStoppedEvent.class, ServerDeviceManager::unload);
     }
 
     private final Map<UUID, McDevice> devices = new HashMap<>();
@@ -28,11 +31,11 @@ public class ServerDeviceManager implements DeviceManager {
         this.server = server;
     }
 
-    private static void create(MinecraftServer server) {
-        instance = new ServerDeviceManager(server);
+    private static void create(ServerStartedEvent event) {
+        instance = new ServerDeviceManager(event.getServer());
     }
 
-    private static void unload(MinecraftServer server) {
+    private static void unload(ServerStoppedEvent event) {
         instance = null;
     }
 

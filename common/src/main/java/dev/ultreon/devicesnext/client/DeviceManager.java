@@ -1,9 +1,9 @@
 package dev.ultreon.devicesnext.client;
 
-import dev.architectury.utils.EnvExecutor;
 import dev.ultreon.devicesnext.block.entity.DeviceBlockEntity;
 import dev.ultreon.devicesnext.device.McDevice;
 import dev.ultreon.devicesnext.server.ServerDeviceManager;
+import dev.ultreon.mods.xinexlib.EnvExecutor;
 import net.minecraft.world.level.Level;
 
 import java.util.UUID;
@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface DeviceManager {
 
     static DeviceManager get(Level level) {
-        return EnvExecutor.getEnvSpecific(
+        return EnvExecutor.getInEnvSpecific(
                 () -> {
                     if (level.isClientSide()) return ClientDeviceManager::get;
                     return ServerDeviceManager::get;

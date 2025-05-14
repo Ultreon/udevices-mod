@@ -29,7 +29,7 @@ public class LaptopBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
 
         builder.add(OPEN);
@@ -41,7 +41,7 @@ public class LaptopBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public @NotNull InteractionResult use(@NotNull BlockState blockState, @NotNull Level level, @NotNull BlockPos blockPos, @NotNull Player player, @NotNull InteractionHand interactionHand, @NotNull BlockHitResult blockHitResult) {
+    protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState blockState, Level level, @NotNull BlockPos blockPos, @NotNull Player player, @NotNull BlockHitResult pHitResult) {
         BlockEntity blockEntity = level.getBlockEntity(blockPos);
         if (blockEntity instanceof LaptopBlockEntity laptopBlockEntity) {
             McDevice device = laptopBlockEntity.getDevice();

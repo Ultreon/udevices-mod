@@ -62,7 +62,7 @@ public class McIcon extends McImage {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         ResourceLocation resource = getResource();
         gfx.fill(0, 0, this.getWidth(), this.getHeight(), 0xff555555);
         gfx.fill(1, 1, this.getWidth() - 1, this.getHeight() - 1, 0xff333333);

@@ -1,13 +1,13 @@
 package dev.ultreon.devicesnext.device;
 
-import com.ultreon.mods.lib.util.ServerLifecycle;
-import dev.architectury.utils.Env;
-import dev.architectury.utils.EnvExecutor;
+import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.block.entity.LaptopBlockEntity;
 import dev.ultreon.devicesnext.client.ClientDeviceManager;
 import dev.ultreon.devicesnext.cpu.CPU;
 import dev.ultreon.devicesnext.device.hardware.Drive;
 import dev.ultreon.devicesnext.mineos.DeviceScreen;
+import dev.ultreon.mods.xinexlib.Env;
+import dev.ultreon.mods.xinexlib.EnvExecutor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -32,7 +32,7 @@ public class Laptop extends McDevice {
         }
 
         try {
-            Drive drive = DriveManager.get(ServerLifecycle.getCurrentServer()).create(this, Drive.Class.MEDIUM);
+            Drive drive = DriveManager.get(UDevicesMod.getCurrentServer()).create(this, Drive.Class.MEDIUM);
             GraphicsDevice gpu = new GraphicsDevice(laptopBlock, UUID.randomUUID());
             this.registerComponent(drive);
             this.registerComponent(gpu);

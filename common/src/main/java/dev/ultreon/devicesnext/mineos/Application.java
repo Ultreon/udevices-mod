@@ -102,4 +102,8 @@ public abstract class Application {
     public LibMineOS getMineOSLib() {
         return system.getMineOSLib();
     }
+
+    public boolean isKeyDown(int keyCode) {
+        return system.isKeyDown(keyCode);
+    }
 }

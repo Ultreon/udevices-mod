@@ -1,28 +1,14 @@
 package dev.ultreon.devicesnext.mineos;
 
-import com.caoccao.javet.enums.JSRuntimeType;
-import com.caoccao.javet.exceptions.JavetError;
-import com.caoccao.javet.exceptions.JavetException;
-import com.caoccao.javet.interop.V8Host;
-import com.caoccao.javet.interop.V8Runtime;
-import com.caoccao.javet.interop.options.V8RuntimeOptions;
-import com.caoccao.javet.javenode.JNEventLoop;
-import com.caoccao.javet.javenode.JNEventLoopOptions;
-import com.caoccao.javet.values.V8Value;
-import com.caoccao.javet.values.reference.V8Module;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.ultreon.mods.lib.util.KeyboardHelper;
 import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.api.Color;
 import dev.ultreon.devicesnext.api.OperatingSystem;
 import dev.ultreon.devicesnext.client.ScissorStack;
-import dev.ultreon.devicesnext.device.hardware.FSDirectory;
-import dev.ultreon.devicesnext.device.hardware.FSFile;
-import dev.ultreon.devicesnext.device.hardware.FSNode;
 import dev.ultreon.devicesnext.mineos.exception.McAccessDeniedException;
 import dev.ultreon.devicesnext.mineos.exception.McAppNotFoundException;
 import dev.ultreon.devicesnext.mineos.exception.McNoPermissionException;
@@ -33,7 +19,6 @@ import dev.ultreon.devicesnext.mineos.sizing.IntSize;
 import it.unimi.dsi.fastutil.objects.Reference2LongArrayMap;
 import it.unimi.dsi.fastutil.objects.Reference2LongMap;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -41,6 +26,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,8 +35,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.ultreon.mods.lib.util.KeyboardHelper.Modifier;
 
 public final class OperatingSystemImpl extends WindowManager implements OperatingSystem {
     public static final Gson GSON = new GsonBuilder().create();
@@ -63,7 +47,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     private DesktopWindow desktop;
     private TaskbarWindow taskbar;
     private DesktopApplication desktopApp;
-    private final Modifier metaKey = Modifier.CTRL;
+    private final int metaKey = GLFW.GLFW_KEY_LEFT_CONTROL;
     private long pid = 0L;
     final Kernel kernel = new Kernel();
     private final OsLogger logger = new OsLoggerImpl();
@@ -83,8 +67,6 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     private LibStd stdLib;
     private Disk disk;
     private LibMineOS mineOSLib;
-    private V8Host host;
-    private V8Runtime runtime;
     private long lastInstallCheck;
     private boolean login = false;
     private long loginTime;
@@ -113,35 +95,9 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         this.mineOSLib = new LibMineOS(this);
         this.mineOSLib._init();
 
-        this.host = V8Host.getInstance(JSRuntimeType.Node);
-
         if (!this.fileSystem.isInitialized()) {
             this.fileSystem.initialize();
         }
-
-        V8RuntimeOptions options = new V8RuntimeOptions();
-        options.setGlobalName("global");
-        try {
-            this.runtime = this.host.createV8Runtime(options);
-        } catch (JavetException e) {
-            this._raiseHardError(e);
-            return;
-        }
-
-        runtime.setV8ModuleResolver((v8Runtime, resourceName, v8ModuleReferrer) -> {
-            String resource = this.mineOSLib.readModule(resourceName);
-
-            if (resource == null) {
-                throw new JavetException(JavetError.ModuleNotFound, new IOException("Module not found: " + resourceName));
-            }
-
-            return v8Runtime.getExecutor(resource).setResourceName(resourceName).setModule(true).compileV8Module();
-
-        });
-
-        this.loadApps(runtime, new JNEventLoop(runtime, Util.make(new JNEventLoopOptions(), jnEventLoopOptions -> {
-            jnEventLoopOptions.setGcBeforeClosing(true);
-        })));
 
         try {
             // Register apps and spawn kernel
@@ -167,73 +123,6 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
 
             this.desktop = desktopApp.getDesktop();
             this.taskbar = desktopApp.getTaskbar();
-        } catch (Throwable throwable) {
-            this._raiseHardError(throwable);
-        }
-    }
-
-    @SuppressWarnings("t")
-    private void loadApps(V8Runtime runtime, JNEventLoop eventLoop) {
-        try {
-            FSNode fsNode = this.fileSystem.get("/data/appcfg/");
-
-            if (fsNode == null || !fsNode.isDirectory()) {
-                return;
-            }
-
-            FSDirectory fsDirectory = (FSDirectory) fsNode;
-
-            for (FSNode file : fsDirectory.list()) {
-                if (file.isDirectory()) {
-                    continue;
-                }
-
-                FSFile fsFile = (FSFile) file;
-
-                String name = fsFile.getName();
-                if (!name.endsWith(".json")) {
-                    continue;
-                }
-
-                int open = stdLib.open("/data/appcfg/" + name, 0);
-
-                if (open == -1) {
-                    continue;
-                }
-
-                ByteBuffer buffer = ByteBuffer.allocate((int) fsFile.getLength());
-                stdLib.read(open, buffer);
-                buffer.flip();
-
-                AppConfig appConfig = GSON.fromJson(new String(buffer.array()), AppConfig.class);
-
-                if (appConfig == null) {
-                    continue;
-                }
-
-                this.<Application>registerApp(new ApplicationId(appConfig.appId), () -> {
-                    try {
-                        V8Module v8Module = runtime.getExecutor("""
-                                import Application from "%s"
-                                
-                                export default function() {
-                                    return new Application();
-                                }
-                                """).setResourceName("/data/appcfg/" + name).setModule(true).compileV8Module();
-
-                        V8Value namespace = v8Module.getNamespace();
-
-                        return new Application(appConfig.appId) {
-                            @Override
-                            public void create() {
-                                // TODO
-                            }
-                        };
-                    } catch (JavetException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-            }
         } catch (Throwable throwable) {
             this._raiseHardError(throwable);
         }
@@ -481,11 +370,11 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     }
 
     private boolean handleKey(int keyCode, Window activeWindow) {
-        if ((keyCode == InputConstants.KEY_Q && KeyboardHelper.isKeyDown(metaKey)) || (keyCode == InputConstants.KEY_F4 && KeyboardHelper.isAltDown())) {
+        if ((keyCode == InputConstants.KEY_Q && isKeyDown(metaKey)) || (keyCode == InputConstants.KEY_F4 && isAltDown())) {
             activeWindow.close();
             return true;
         }
-        if (!KeyboardHelper.isKeyDown(metaKey)) return false;
+        if (!isKeyDown(metaKey)) return false;
 
         switch (keyCode) {
             case InputConstants.KEY_UP -> {
@@ -500,6 +389,22 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
             }
         }
         return false;
+    }
+
+    public boolean isCtrlDown() {
+        return isKeyDown(GLFW.GLFW_KEY_LEFT_CONTROL) || isKeyDown(GLFW.GLFW_KEY_RIGHT_CONTROL);
+    }
+
+    public boolean isAltDown() {
+        return isKeyDown(GLFW.GLFW_KEY_LEFT_ALT) || isKeyDown(GLFW.GLFW_KEY_RIGHT_ALT);
+    }
+
+    public boolean isShiftDown() {
+        return isKeyDown(GLFW.GLFW_KEY_LEFT_SHIFT) || isKeyDown(GLFW.GLFW_KEY_RIGHT_SHIFT);
+    }
+
+    public boolean isMetaDown() {
+        return isKeyDown(GLFW.GLFW_KEY_LEFT_SUPER) || isKeyDown(GLFW.GLFW_KEY_RIGHT_SUPER);
     }
 
     private boolean hookIfAvailable(int keyCode, int scanCode, int modifiers) {
@@ -538,7 +443,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         gfx.fill(this.getX(), this.getY(), this.width, this.height, 0xff404040);
         if (lastInstallCheck + 5000 < System.currentTimeMillis() && (!this.fileSystem.isInitialized() || !this.fileSystem.exists("/data/installed")) && this.windows.stream().noneMatch(window -> window instanceof FirstTimeSetupApplication.FirstTimeSetupWindow)) {
             this._spawn(new FirstTimeSetupApplication(this, new ApplicationId("dev.ultreon:setup")), new String[0]);
@@ -581,7 +486,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         try {
             this.openApps.forEach(Application::update);
 
-            super.render(gfx, mouseX, mouseY, partialTicks);
+            super.renderComponent(gfx, mouseX, mouseY, partialTicks);
         } catch (Throwable throwable) {
             ScissorStack.clearScissorStack();
             this._raiseHardError(throwable);
@@ -649,7 +554,7 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     }
 
     @Override
-    public Modifier getMetaKey() {
+    public int getMetaKey() {
         return metaKey;
     }
 
@@ -663,11 +568,11 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amountY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double amountX, double amountY) {
         if (this.bsod != null) return false;
 
         try {
-            return super.mouseScrolled(mouseX, mouseY, amountY);
+            return super.mouseScrolled(mouseX, mouseY, amountX, amountY);
         } catch (Throwable throwable) {
             this._raiseHardError(throwable);
             return false;
@@ -816,5 +721,9 @@ public final class OperatingSystemImpl extends WindowManager implements Operatin
         this.loginTime = System.currentTimeMillis();
 
         this._spawn(this.desktopApp, new String[0]);
+    }
+
+    public boolean isKeyDown(int keyCode) {
+        return GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), keyCode) == GLFW.GLFW_PRESS;
     }
 }

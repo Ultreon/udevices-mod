@@ -3,13 +3,13 @@
   "id": "udevices",
   "version": "${version}",
 
-  "name": "udevices",
-  "description": "Working electronic devices for Minecraft! Now with a better API!",
+  "name": "Ultreon Devices²",
+  "description": "Ultreon Devices Squared: Working electronic devices for Minecraft! Now with a better API!\n\nhttps://ultreon.dev/?id=ultreon-devices-2#project",
   "authors": [],
   "contact": {},
 
   "license": "GNU LGPL 3.0",
-  "icon": "icon.png",
+  "icon": "assets/udevices/icon.png",
 
   "environment": "*",
   "entrypoints": {

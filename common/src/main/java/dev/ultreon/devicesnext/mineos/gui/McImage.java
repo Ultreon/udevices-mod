@@ -143,7 +143,7 @@ public class McImage extends ResImage {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
+    public void renderComponent(@NotNull GuiGraphics gfx, int mouseX, int mouseY, float partialTicks) {
         ResourceLocation resource = getResource();
 
         if (resource != null) {
@@ -151,7 +151,7 @@ public class McImage extends ResImage {
         } else if (this.loader != null && this.loader.error != null) {
             gfx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xff555555);
             gfx.fill(getX() + 1, getY() + 1, getX() + getWidth() - 1, getY() + getHeight() - 1, 0xff333333);
-            drawCenteredStringWithoutShadow(gfx, font, Component.literal(loader.error.getLocalizedMessage()), getX() + getWidth() / 2, getY() + getHeight() / 2, 0xffffdddd);
+            gfx.drawCenteredString(font, Component.literal(loader.error.getLocalizedMessage()), getX() + getWidth() / 2, getY() + getHeight() / 2, 0xffffdddd);
         } else {
             gfx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xff555555);
             gfx.fill(getX() + 1, getY() + 1, getX() + getWidth() - 1, getY() + getHeight() - 1, 0xff333333);
@@ -259,7 +259,7 @@ public class McImage extends ResImage {
         }
 
         protected final void fail(IOException exception) {
-            McImage.this.resource = new ResourceLocation("minecraft:");
+            McImage.this.resource = ResourceLocation.parse("minecraft:");
             this.error = exception;
             this.loaded = true;
         }

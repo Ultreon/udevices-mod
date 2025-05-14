@@ -1,6 +1,5 @@
 package dev.ultreon.devicesnext.client;
 
-import com.ultreon.mods.lib.network.api.Network;
 import dev.ultreon.devicesnext.block.entity.DeviceBlockEntity;
 import dev.ultreon.devicesnext.mineos.DeviceScreen;
 import dev.ultreon.devicesnext.util.FuncPtr;
@@ -9,6 +8,7 @@ import dev.ultreon.devicesnext.gpu.GraphicsOutput;
 import dev.ultreon.devicesnext.gpu.GfxFunctionMap;
 import dev.ultreon.devicesnext.network.UDevicesNet;
 import dev.ultreon.devicesnext.network.packets.GfxCallbackPacket;
+import dev.ultreon.mods.xinexlib.network.Networker;
 import net.minecraft.client.Minecraft;
 
 public class ClientGPU implements GPU, GraphicsOutput {
@@ -79,7 +79,7 @@ public class ClientGPU implements GPU, GraphicsOutput {
 
     @Override
     public void sendPacket(GfxCallbackPacket packet) {
-        Network network = UDevicesNet.get();
+        Networker network = UDevicesNet.get();
         network.sendToServer(packet);
     }
 
