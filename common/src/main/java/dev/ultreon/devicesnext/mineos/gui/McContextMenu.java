@@ -24,4 +24,13 @@ public class McContextMenu extends McComponent {
     public void remove(McMenuItem item) {
         this.items.remove(item);
     }
+
+    void open(int mouseX, int mouseY) {
+        this.setPosition(mouseX, mouseY);
+        this.visible = true;
+    }
+
+    public void close() {
+        this.visible = false;
+    }
 }

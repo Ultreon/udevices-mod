@@ -107,4 +107,20 @@ public abstract class McComponent extends BaseWidget {
             gfx.drawCenteredString(font, message, (x + width) / 2, textY, color);
         }
     }
+
+    public void setContextMenu(McContextMenu contextMenu) {
+        this.contextMenu = contextMenu;
+    }
+
+    public McContextMenu getContextMenu() {
+        return this.contextMenu;
+    }
+
+    public void openContextMenu(int mouseX, int mouseY) {
+        this.contextMenu.open(mouseX, mouseY);
+    }
+
+    public void closeContextMenu() {
+        this.contextMenu.close();
+    }
 }
