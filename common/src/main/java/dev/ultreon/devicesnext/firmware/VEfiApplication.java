@@ -54,10 +54,13 @@ public class VEfiApplication extends Thread implements AutoCloseable {
         // `Store` structure. Note that you can also tweak configuration settings
         // with a `Config` and an `Engine` if desired.
         System.err.println("Initializing...");
+        Config config = new Config();
+        config.staticMemoryMaximumSize(536870911);
 
         AtomicReference<Memory> memory = new AtomicReference<>();
         try (WasiCtx wasi = new WasiCtxBuilder().inheritStdout().inheritStderr().build();
-             Store<Void> store = Store.withoutData(wasi);
+             Engine engine = new Engine(config);
+             Store<Void> store = new Store(null, engine, wasi);
              Linker linker = new Linker(store.engine());
              Module module = Module.fromBinary(store.engine(), data)) {
 
