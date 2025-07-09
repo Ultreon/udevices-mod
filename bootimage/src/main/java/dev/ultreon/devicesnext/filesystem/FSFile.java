@@ -1,6 +1,7 @@
 package dev.ultreon.devicesnext.filesystem;
 
-import com.badlogic.gdx.utils.IntSet;
+import it.unimi.dsi.fastutil.ints.IntArraySet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
@@ -14,11 +15,11 @@ public class FSFile implements FSNode {
     private final FSDirectory parent;
     private final long address;
     private final ByteBuffer buffer = ByteBuffer.allocate(Disk.BLOCK_SIZE);
-    private final IntSet blocks = new IntSet();
+    private final IntSet blocks = new IntArraySet();
     private long oldLength = -1;
     String name = "";
     long length = -1;
-    long dataBlock = -1;
+    long dataBlock;
     long created = -1;
     long lastAccessed = -1;
     long lastModified = -1;
@@ -275,11 +276,7 @@ public class FSFile implements FSNode {
         buffer.position(0);
 
         buffer.putInt(blockCount);
-        List<Integer> blocks = new ArrayList<>();
-        IntSet.IntSetIterator iterator = this.blocks.iterator();
-        while (iterator.hasNext) {
-            blocks.add(iterator.next());
-        }
+        List<Integer> blocks = new ArrayList<>(this.blocks);
         blocks.sort(Comparator.naturalOrder());
         for (int block : blocks) {
             buffer.putInt(block);

@@ -1,79 +1,53 @@
 package dev.ultreon.devicesnext.mineos;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.Batch;
-import com.badlogic.gdx.utils.BufferUtils;
-import com.badlogic.gdx.utils.IntMap;
-import com.mojang.blaze3d.platform.GlStateManager;
 import dev.ultreon.devicesnext.filesystem.*;
 import dev.ultreon.devicesnext.UDevicesMod;
-import dev.ultreon.devicesnext.api.OperatingSystem;
+import dev.ultreon.devicesnext.firmware.VEfiApplication;
+import dev.ultreon.devicesnext.firmware.api.VEfi;
+import dev.ultreon.devicesnext.firmware.api.VEfiExt;
 import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import dev.ultreon.devicesnext.mineos.gui.VirtualGpu;
 import dev.ultreon.devicesnext.virtual.*;
-import dev.ultreon.mcgdx.impl.GdxScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.NullInputStream;
-import org.graalvm.polyglot.*;
-import org.graalvm.polyglot.io.IOAccess;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jnode.fs.FileSystemException;
-import org.lwjgl.glfw.GLFW;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import space.earlygrey.shapedrawer.ShapeDrawer;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
-import java.nio.IntBuffer;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Set;
+import java.nio.file.StandardOpenOption;
 import java.util.UUID;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import static dev.ultreon.devicesnext.UDevicesMod.MOD_ID;
 
 /**
  * Screen for showing the window manager, the desktop and the taskbar.
  */
-public class VirtualComputer extends GdxScreen {
+public class VirtualComputer extends Screen {
     private final Screen back;
     private final boolean desktopFullscreen;
     private final GpuRenderer gfx = new GpuRenderer(this);
     private final Thread codeThread;
-    private final Engine engine;
-    private final Context codeContext;
-    public Value processEvent;
     protected int desktopX;
     protected int desktopY;
     protected int desktopWidth;
     protected int desktopHeight;
-    private Kernel kernel;
-    private OperatingSystemImpl system;
+//    private Kernel kernel;
+//    private OperatingSystemImpl system;
     private int pid = 0;
-    private final IntMap<VirtualProcess> processes = new IntMap<>();
     private final FS fs;
     private final VirtualFileSystem virtualFS = new VirtualFileSystem(this);
-    private final VirtualBiosApi virtualBiosApi = new VirtualBiosApi(this);
-    private final IntBuffer intBuffer = BufferUtils.newIntBuffer(1);
+    private VEfiApplication vEfiApplication;
+    private final VEfi vEfi = new VEfi();
 
     public VirtualComputer(LaunchOptions options) {
         super(options.title);
@@ -102,92 +76,6 @@ public class VirtualComputer extends GdxScreen {
             throw new RuntimeException(e);
         }
 
-        this.engine = Engine.newBuilder()
-                .logHandler(new Handler() {
-                    @Override
-                    public void publish(LogRecord record) {
-                        Level level = record.getLevel();
-                        Logger logger = LoggerFactory.getLogger(record.getLoggerName());
-                        if (level.intValue() < Level.FINER.intValue()) {
-                            logger.trace("{}: {}", record.getLevel().getName(), record.getMessage());
-                        } else if (level.intValue() < Level.FINE.intValue()) {
-                            logger.debug("{}: {}", record.getLevel().getName(), record.getMessage());
-                        } else if (level.intValue() < Level.INFO.intValue()) {
-                            logger.info("{}: {}", record.getLevel().getName(), record.getMessage());
-                        } else if (level.intValue() < Level.WARNING.intValue()) {
-                            logger.warn("{}: {}", record.getLevel().getName(), record.getMessage());
-                        } else {
-                            logger.error("{}: {}", record.getLevel().getName(), record.getMessage());
-                        }
-                    }
-
-                    @Override
-                    public void flush() {
-
-                    }
-
-                    @Override
-                    public void close() throws SecurityException {
-
-                    }
-                }).build();
-
-        codeContext = Context.newBuilder("python")
-                .environment("OSTYPE", "MineOS")
-                .environment("PROCESSOR_ARCHITECTURE", "AMD64")
-                .environment("PYTHON_PLATFORM", "unix")
-                .environment("USER", "root")
-                .environment("SHELL", "/bin/shell.py")
-                .environment("LANG", "en_US.UTF-8")
-                .environment("HOME", "/root")
-                .environment("TERM", "shell")
-                .option("python.PythonPath", "/Library:/User/Library:/User/Local/Library:/VariableData/Library:/System/Library:/Boot")
-                .engine(engine)
-                .allowIO(IOAccess.newBuilder().fileSystem(virtualFS).build())
-                .out(java.lang.System.out)
-                .in(NullInputStream.INSTANCE)
-                .err(java.lang.System.err)
-                .timeZone(ZoneId.of("UTC"))
-                .processHandler(new VirtualProcessHandler(this))
-                .allowCreateThread(false)
-                .allowCreateProcess(false)
-                .allowNativeAccess(false)
-                .allowEnvironmentAccess(EnvironmentAccess.NONE)
-                .allowHostClassLoading(false)
-                .allowHostAccess(HostAccess.newBuilder()
-                        .allowAccessAnnotatedBy(VirtualApi.class)
-                        .allowListAccess(true)
-                        .allowMapAccess(true)
-                        .allowBufferAccess(true)
-                        .allowArrayAccess(true)
-                        .allowPublicAccess(true)
-                        .allowBigIntegerNumberAccess(true)
-                        .allowIterableAccess(true)
-                        .allowIteratorAccess(true)
-                        .allowImplementations(Object.class)
-                        .allowAllImplementations(false)
-                        .allowAccessInheritance(false)
-                        .denyAccess(Class.class)
-                        .denyAccess(ClassLoader.class)
-                        .denyAccess(MethodHandle.class)
-                        .denyAccess(MethodHandles.class)
-                        .denyAccess(MethodHandles.Lookup.class)
-                        .denyAccess(Method.class)
-                        .denyAccess(Thread.class)
-                        .denyAccess(ProcessHandle.class)
-                        .denyAccess(ProcessBuilder.class)
-                        .denyAccess(Process.class)
-                        .denyAccess(Runtime.class)
-                        .denyAccess(VirtualComputer.class)
-                        .denyAccess(ThreadGroup.class)
-                        .denyAccess(Thread.State.class)
-                        .denyAccess(Thread.UncaughtExceptionHandler.class)
-                        .build())
-                .allowHostClassLookup(s -> s.startsWith("com.ultreon.devices."))
-                .allowValueSharing(true)
-                .useSystemExit(false)
-                .allowPolyglotAccess(PolyglotAccess.NONE).build();
-
         this.codeThread = createCodeThread();
     }
 
@@ -197,7 +85,6 @@ public class VirtualComputer extends GdxScreen {
 
         if (this.codeThread != null) {
             this.codeThread.interrupt();
-            this.codeContext.close(true);
             try {
                 this.codeThread.interrupt();
                 this.codeThread.join();
@@ -206,7 +93,7 @@ public class VirtualComputer extends GdxScreen {
             }
         }
 
-        this.gfx.dispose();
+        this.gfx.delete();
 
         try {
             fs.close();
@@ -224,47 +111,21 @@ public class VirtualComputer extends GdxScreen {
     }
 
     private void initialize() {
-        codeContext.getBindings("python").putMember("__bios", virtualBiosApi);
-
-        try {
-            UDevicesMod.LOGGER.info("Starting BIOS...");
-            //noinspection PyUnresolvedReferences,PyStatementEffect
-            Value python = codeContext.eval(Source.newBuilder("python", """
-                    def bios_main(__bios, logger):
-                        try:
-                            import os
-                            print("Booting up...")
-                    
-                            if not os.path.exists("/Boot/main.py"):
-                                print("No main.py found")
-                                return -1
-                    
-                            with open("/Boot/main.py", "r") as f:
-                                data = f.read()
-                                print(data)
-                                try:
-                                    exec(data, {"__name__": "__main__", "__bios": __bios, "logger": logger})
-                                except Exception as e:
-                                    import traceback
-                                    traceback.print_exc()
-                                    return -2
-                        
-                            print("Shut down!")
-                        
-                            return 0
-                        except BaseException as e:
-                            import traceback
-                            traceback.print_exception(e)            
-                    
-                    bios_main
-                    """, "<<bios>>").build());
-
-            python.execute(virtualBiosApi, UDevicesMod.LOGGER);
-
-            //noinspection ResultOfMethodCallIgnored
-            Minecraft.getInstance().submit(this::onClose);
+        try (SeekableByteChannel channel = getFileSystem().open(new PathHandle("/Boot/WASM32.VEFI"), StandardOpenOption.READ)) {
+            SeekableByteChannel position = channel.position(0L);
+            long size = channel.size();
+            if (size > Integer.MAX_VALUE) {
+                UDevicesMod.LOGGER.error("VEFI Boot file is too large: {} >= Integer.MAX_VALUE", size);
+                return;
+            }
+            ByteBuffer allocate = ByteBuffer.allocate((int) size);
+            position.read(allocate);
+            byte[] array = allocate.array();
+            VEfiApplication virtualEfiApp = new VEfiApplication(array, "WASMX86.VEFI", new VEfiExt(fs));
+            vEfiApplication = virtualEfiApp;
+            virtualEfiApp.start();
         } catch (IOException e) {
-            UDevicesMod.LOGGER.error("Failed to start BIOS", e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -287,120 +148,96 @@ public class VirtualComputer extends GdxScreen {
         this.gfx.reconnectDisplay(this.width, this.height);
     }
 
-    @SafeVarargs
-    protected final <T extends Application> void registerApp(ApplicationId id, ApplicationFactory<T> factory, T... typeGetter) {
-        this.system.registerApp(id, factory, typeGetter);
-    }
+//    @SafeVarargs
+//    protected final <T extends Application> void registerApp(ApplicationId id, ApplicationFactory<T> factory, T... typeGetter) {
+//        this.system.registerApp(id, factory, typeGetter);
+//    }
 
-    /**
-     * @return the desktop window related to the {@link #getSystem()} method.
-     */
-    protected final Application getDesktopApp() {
-        return this.system.getDesktop();
-    }
-
-    @Override
-    public void render(ShapeDrawer shapeDrawer, Batch batch, int i, int j, float f) {
-        super.render(shapeDrawer, batch, i, j, f);
-
-        double scale = 0;
-        if (minecraft != null) {
-            scale = minecraft.getWindow().getGuiScale();
-        }
-
-        System.out.println("{PRE_BEGIN} GlStateManager.getBoundFramebuffer() = " + GlStateManager.getBoundFramebuffer());
-        gfx.getDisplayBuffer().begin();
-        gfx.begin(shapeDrawer, batch);
-        Gdx.gl.glClearColor(0, 0, 0, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-        batch.setProjectionMatrix(batch.getProjectionMatrix().setToOrtho2D(0, 0, 50, 50));
-        batch.begin();
-        shapeDrawer.filledCircle(5, 5, 10, Color.SKY);
-        gfx.fill(10, 10, 40, 40, 0, 1, 1, 1);
-        gfx.renderOutline(25, 25, 40, 40, 1, 0, 0, 1);
-        batch.end();
-        batch.setProjectionMatrix(batch.getProjectionMatrix().setToOrtho2D(0, Gdx.graphics.getBackBufferHeight(), Gdx.graphics.getBackBufferWidth(), -Gdx.graphics.getBackBufferHeight()));
-        gfx.end();
-        gfx.getDisplayBuffer().end();
-
-        batch.begin();
-        batch.draw(gfx.getDisplayTexture(), 0, 0, 800, 600);
-        batch.end();
-    }
+//    /**
+//     * @return the desktop window related to the {@link #getSystem()} method.
+//     */
+//    protected final Application getDesktopApp() {
+//        return this.system.getDesktop();
+//    }
 
 
     public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {
-        double[] xPos = new double[1];
-        double[] yPos = new double[1];
-
-        assert this.minecraft != null;
-        GLFW.glfwGetCursorPos(this.minecraft.getWindow().getWindow(), xPos, yPos);
-
-        if (xPos[0] < 0) mouseX = Integer.MIN_VALUE;
-        if (yPos[0] < 0) mouseY = Integer.MIN_VALUE;
-
-        if (xPos[0] > this.minecraft.getWindow().getWidth()) mouseX = Integer.MAX_VALUE;
-        if (yPos[0] > this.minecraft.getWindow().getHeight()) mouseY = Integer.MAX_VALUE;
-
-        int finalMouseX = mouseX;
-        int finalMouseY = mouseY;
-
-        if (!this.desktopFullscreen) {
-//            BaseScreen.renderFrame(gfx, this.desktopX - 8, this.desktopY - 8, this.desktopWidth + 16, this.desktopHeight + 16, this.getTheme());
-            // TODO
-        }
-
-
-        try {
-            this.system.setWidth(this.width);
-            this.system.setHeight(this.height);
-            this.system.render(gfx, finalMouseX - this.desktopX, finalMouseY - this.desktopY, partialTicks);
-        } catch (Throwable throwable) {
-            if (this.system == null) return;
-            this.system._raiseHardError(throwable);
-        }
+//        double[] xPos = new double[1];
+//        double[] yPos = new double[1];
+//
+//        assert this.minecraft != null;
+//        GLFW.glfwGetCursorPos(this.minecraft.getWindow().getWindow(), xPos, yPos);
+//
+//        if (xPos[0] < 0) mouseX = Integer.MIN_VALUE;
+//        if (yPos[0] < 0) mouseY = Integer.MIN_VALUE;
+//
+//        if (xPos[0] > this.minecraft.getWindow().getWidth()) mouseX = Integer.MAX_VALUE;
+//        if (yPos[0] > this.minecraft.getWindow().getHeight()) mouseY = Integer.MAX_VALUE;
+//
+//        int finalMouseX = mouseX;
+//        int finalMouseY = mouseY;
+//
+//        if (!this.desktopFullscreen) {
+////            BaseScreen.renderFrame(gfx, this.desktopX - 8, this.desktopY - 8, this.desktopWidth + 16, this.desktopHeight + 16, this.getTheme());
+//            // TODO
+//        }
+//
+//
+//        try {
+//            this.system.setWidth(this.width);
+//            this.system.setHeight(this.height);
+//            this.system.render(gfx, finalMouseX - this.desktopX, finalMouseY - this.desktopY, partialTicks);
+//        } catch (Throwable throwable) {
+//            if (this.system == null) return;
+//            this.system._raiseHardError(throwable);
+//        }
     }
 
     /**
      * @return the device's OS desktop.
      */
-    public OperatingSystem getSystem() {
-        return this.system;
+    public VEfiApplication getSystem() {
+        return vEfiApplication;
     }
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
-        if (isMouseOverDisplay(mouseX, mouseY))
-            this.system.mouseMoved(mouseX, mouseY);
+//        if (isMouseOverDisplay(mouseX, mouseY))
+//            this.vEfi.mouseMoved(mouseX, mouseY);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (system == null) return false;
-        return isMouseOverDisplay(mouseX, mouseY) && this.system.mouseReleased(mouseX - desktopX, mouseY - desktopY, button);
+//        if (system == null) return false;
+//        return isMouseOverDisplay(mouseX, mouseY) && this.system.mouseReleased(mouseX - desktopX, mouseY - desktopY, button);
+        return false;
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (system == null) return false;
-        return isMouseOverDisplay(mouseX, mouseY) && system.mouseClicked(mouseX - desktopX, mouseY - desktopY, button);
+//        if (system == null) return false;
+//        return isMouseOverDisplay(mouseX, mouseY) && system.mouseClicked(mouseX - desktopX, mouseY - desktopY, button);
+        return false;
     }
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (system == null) return false;
-        return isMouseOverDisplay(mouseX, mouseY) && system.mouseDragged(mouseX - desktopX, mouseY - desktopY, button, dragX, dragY);
+//        if (system == null) return false;
+//        return isMouseOverDisplay(mouseX, mouseY) && system.mouseDragged(mouseX - desktopX, mouseY - desktopY, button, dragX, dragY);
+        return false;
     }
 
     @Override
     public boolean mouseScrolled(double pMouseX, double pMouseY, double pScrollX, double pScrollY) {
-        if (system == null) return false;
-        return isMouseOverDisplay(pMouseX, pMouseY) && system.mouseScrolled(pMouseX - desktopX, pMouseY - desktopY, pScrollY);
+//        if (system == null) return false;
+//        return isMouseOverDisplay(pMouseX, pMouseY) && system.mouseScrolled(pMouseX - desktopX, pMouseY - desktopY, pScrollY);
+        return false;
     }
 
     private boolean isMouseOverDisplay(double mouseX, double mouseY) {
-        if (system == null) return false;
-        return isPointBetween((int) mouseX, (int) mouseY, desktopX, desktopY, desktopWidth, desktopHeight);
+//        if (system == null) return false;
+//        return isPointBetween((int) mouseX, (int) mouseY, desktopX, desktopY, desktopWidth, desktopHeight);
+        return false;
     }
 
     private boolean isPointBetween(int mouseX, int mouseY, int x, int y, int width, int height) {
@@ -409,20 +246,23 @@ public class VirtualComputer extends GdxScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (system == null) return false;
-        return system.keyPressed(keyCode, scanCode, modifiers);
+//        if (system == null) return false;
+//        return system.keyPressed(keyCode, scanCode, modifiers);
+        return false;
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (system == null) return false;
-        return system.keyReleased(keyCode, scanCode, modifiers);
+//        if (system == null) return false;
+//        return system.keyReleased(keyCode, scanCode, modifiers);
+        return false;
     }
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        if (system == null) return false;
-        return system.charTyped(codePoint, modifiers);
+//        if (system == null) return false;
+//        return system.charTyped(codePoint, modifiers);
+        return false;
     }
 
     @Override
@@ -431,26 +271,17 @@ public class VirtualComputer extends GdxScreen {
     }
 
     public void onShutdown() {
-        this.system = null;
+        vEfiApplication.close();
         System.gc();
         Minecraft.getInstance().setScreen(back);
     }
 
-    public @Nullable Application getKernel() {
-        return kernel;
+    public @Nullable VEfiApplication getKernel() {
+        return vEfiApplication;
     }
 
     public void open() {
         Minecraft.getInstance().setScreen(this);
-    }
-
-    public VirtualProcess spawnProcess(Value modules, String init, String[] command, Map<String, String> env) {
-        String path = command[0];
-        String[] args = Arrays.copyOfRange(command, 1, command.length);
-        VirtualProcess virtualProcess = new VirtualProcess(this, ++pid, modules, init, path, args, env);
-        this.processes.put(virtualProcess.getPid(), virtualProcess);
-        virtualProcess.start();
-        return virtualProcess;
     }
 
     public FS getFileSystem() {
@@ -465,14 +296,6 @@ public class VirtualComputer extends GdxScreen {
         return gfx.getVGpu();
     }
 
-    public VirtualProcess getProcess(int pid) {
-        return processes.get(pid);
-    }
-
-    public Engine getEngine() {
-        return engine;
-    }
-
     public static class LaunchOptions {
         public int x = 0;
         public int y = 0;
@@ -481,28 +304,14 @@ public class VirtualComputer extends GdxScreen {
         private Component title;
         private Screen back;
         private boolean fullscreen = false;
-        private final Set<Window> windows = Sets.newHashSet();
 
         public LaunchOptions title(Component title) {
             this.title = title;
             return this;
         }
 
-        public LaunchOptions rect(Rectangle rect) {
-            this.x = rect.x;
-            this.y = rect.y;
-            this.width = rect.width;
-            this.height = rect.height;
-            return this;
-        }
-
         public LaunchOptions back(Screen back) {
             this.back = back;
-            return this;
-        }
-
-        public LaunchOptions window(Window window) {
-            this.windows.add(window);
             return this;
         }
 

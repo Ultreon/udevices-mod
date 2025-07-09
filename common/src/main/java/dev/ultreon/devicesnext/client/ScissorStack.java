@@ -80,22 +80,23 @@ public class ScissorStack {
     }
 
     private static boolean pushScissorTranslated(GpuRenderer gfx, int x, int y, int width, int height) {
-        return pushScissorTranslated(gfx.getBatch(), x, y, width, height);
+//        return pushScissorTranslated(gfx.getBatch(), x, y, width, height);
+        return true;
     }
 
     public static void scissor(GpuRenderer graphics, int x, int y, int width, int height, Runnable func) {
         if (pushScissorTranslated(graphics, x, y, width, height)) {
-            if (x != 0 || y != 0) {
-                graphics.getBatch().setTransformMatrix(graphics.getBatch().getTransformMatrix().translate(x, y, 0));
-            }
-            try {
-                func.run();
-            } finally {
-                if (x != 0 || y != 0) {
-                    graphics.getBatch().setTransformMatrix(graphics.getBatch().getTransformMatrix().translate(-x, -y, 0));
-                }
-                popScissor();
-            }
+//            if (x != 0 || y != 0) {
+//                graphics.getBatch().setTransformMatrix(graphics.getBatch().getTransformMatrix().translate(x, y, 0));
+//            }
+//            try {
+//                func.run();
+//            } finally {
+//                if (x != 0 || y != 0) {
+//                    graphics.getBatch().setTransformMatrix(graphics.getBatch().getTransformMatrix().translate(-x, -y, 0));
+//                }
+//                popScissor();
+//            }
         }
     }
 

@@ -24,7 +24,6 @@
   "depends": {
     "fabricloader": ">=0.15.7",
     "minecraft": ">=1.21.1",
-    "xinexlib": ">=0.1.0-SNAPSHOT",
-    "mcgdx": ">=0.1.0-SNAPSHOT"
+    "xinexlib": ">=0.1.0-SNAPSHOT"
   }
 }

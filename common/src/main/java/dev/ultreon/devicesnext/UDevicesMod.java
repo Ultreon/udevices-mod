@@ -10,14 +10,11 @@ import dev.ultreon.devicesnext.block.entity.DeviceBlockEntity;
 import dev.ultreon.devicesnext.block.entity.LaptopBlockEntity;
 import dev.ultreon.devicesnext.client.UDevicesModClient;
 import dev.ultreon.devicesnext.device.McDevice;
-import dev.ultreon.devicesnext.mineos.gui.McContainer;
-import dev.ultreon.devicesnext.mineos.gui.McWidget;
 import dev.ultreon.devicesnext.network.UDevicesNet;
 import dev.ultreon.devicesnext.server.ServerGPU;
 import dev.ultreon.devicesnext.util.Arguments;
 import dev.ultreon.mods.xinexlib.Env;
 import dev.ultreon.mods.xinexlib.EnvExecutor;
-import dev.ultreon.mods.xinexlib.client.event.ClientStartedEvent;
 import dev.ultreon.mods.xinexlib.client.event.ClientStoppedEvent;
 import dev.ultreon.mods.xinexlib.event.server.ServerStartedEvent;
 import dev.ultreon.mods.xinexlib.event.server.ServerStoppingEvent;
@@ -36,7 +33,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.storage.LevelResource;
 import org.jnode.driver.ApiNotFoundException;
 import org.slf4j.Logger;
@@ -82,14 +78,6 @@ public class UDevicesMod {
             disposables.forEach(Disposable::dispose);
             disposables.clear();
         });
-
-        EventSystem.MAIN.on(ClientStartedEvent.class, clientStartedEvent -> {
-            font = new BitmapFont();
-            CLEANER.register(font, () -> {
-                font.dispose();
-            });
-        });
-
     }
 
     public static Path getDataPath() {

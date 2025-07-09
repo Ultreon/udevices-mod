@@ -36,13 +36,8 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
     implementation 'com.github.Nuix:jnode-fs:v1.0.1'
-
-    implementation "com.badlogicgames.gdx:gdx:$gdx_version"
-    implementation "com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop", {
-        transitive = false
-    }
-
     implementation "commons-io:commons-io:2.15.1"
+    implementation "it.unimi.dsi:fastutil:8.5.13"
 }
 
 test {

@@ -59,7 +59,6 @@ configurations {
 
 dependencies {
     implementation("dev.ultreon.mods:xinexlib-neoforge-1.21.1:0.1.0-SNAPSHOT") { transitive false }
-    implementation("dev.ultreon:mcgdx-neoforge-1.21.1:0.1.0-SNAPSHOT") { transitive false }
 
     compileOnly project(":bootimage"), { transitive false }
 
@@ -102,7 +101,7 @@ dependencies {
             prefer '24.1.1' // The version actually used in your dev workspace
         }
     }
-    jarJar(implementation("space.earlygrey:shapedrawer:$shapedrawer_version")) {
+    jarJar(implementation(clientAdditionalRuntimeClasspath "space.earlygrey:shapedrawer:$shapedrawer_version")) {
         version {
             // The version range your mod is actually compatible with.
             // Note that you may receive a *lower* version than your preferred if another
@@ -111,7 +110,7 @@ dependencies {
             prefer shapedrawer_version // The version actually used in your dev workspace
         }
     }
-    jarJar(implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version") {
+    jarJar(clientAdditionalRuntimeClasspath implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version") {
         exclude group: "org.lwjgl.lwjgl"
         exclude group: "org.lwjgl"
     }) {
@@ -123,7 +122,7 @@ dependencies {
             prefer '1.13.0' // The version actually used in your dev workspace
         }
     }
-    jarJar(implementation("com.badlogicgames.gdx:gdx:$gdx_version")) {
+    jarJar(clientAdditionalRuntimeClasspath implementation("com.badlogicgames.gdx:gdx:$gdx_version")) {
         version {
             // The version range your mod is actually compatible with.
             // Note that you may receive a *lower* version than your preferred if another
@@ -132,7 +131,7 @@ dependencies {
             prefer '1.13.0' // The version actually used in your dev workspace
         }
     }
-    jarJar(implementation("com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop")) {
+    jarJar(clientAdditionalRuntimeClasspath implementation("com.badlogicgames.gdx:gdx-platform:$gdx_version:natives-desktop")) {
         version {
             // The version range your mod is actually compatible with.
             // Note that you may receive a *lower* version than your preferred if another
@@ -142,6 +141,10 @@ dependencies {
         }
     }
 
+    jarJar clientAdditionalRuntimeClasspath("com.github.Nuix:jnode-fs:v1.0.1") {
+        exclude group: "com.google.guava", module: "guava"
+    }
+    jarJar clientAdditionalRuntimeClasspath(library("io.github.kawamuray.wasmtime:wasmtime-java:0.19.0"))
     jarJar('com.github.Nuix:jnode-fs:v1.0.1') {
         version {
             // The version range your mod is actually compatible with.

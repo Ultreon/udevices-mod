@@ -1,192 +1,119 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.*;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
-import com.badlogic.gdx.utils.Disposable;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.mojang.blaze3d.pipeline.RenderCall;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ultreon.devicesnext.mineos.VirtualComputer;
-import org.jetbrains.annotations.ApiStatus;
-import space.earlygrey.shapedrawer.ShapeDrawer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import org.lwjgl.opengl.GL11;
 
-public class GpuRenderer implements Disposable {
-    private Batch batch;
-    private ShapeDrawer shapes;
-    private Texture whiteTexture;
-    private final BitmapFont font = new BitmapFont();
-    private final GlyphLayout layout = new GlyphLayout();
-    private final Color colorTmp = new Color();
+import static org.lwjgl.opengl.GL11.*;
+
+public class GpuRenderer {
     private final VirtualGpu vGpu;
-    private final FrameBuffer frameBuffer;
+    private final FrameBufferObject fbo;
+    private boolean blend = false;
+    private boolean depthMask = true;
+    private boolean cull = false;
+    private boolean scissorTest = false;
+    private float red;
+    private float green;
+    private float blue;
+    private float alpha;
 
     public GpuRenderer(VirtualComputer computer) {
         vGpu = new VirtualGpu(this, computer);
-
-        frameBuffer = new FrameBuffer(Pixmap.Format.RGB888, 800, 600, true);
+        fbo = new FrameBufferObject(Minecraft.getInstance().getTextureManager(), 400, 300);
     }
 
-    private TextureRegion createWhitePixel() {
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGB888);
-        pixmap.setColor(Color.WHITE);
-        pixmap.fill();
-        Texture texture = new Texture(pixmap);
-        TextureRegion region = new TextureRegion(texture);
-        pixmap.dispose();
-        whiteTexture = texture;
-        return region;
-    }
-
-    public void begin(ShapeDrawer shapeDrawer, Batch batch) {
-        this.batch = batch;
-        this.shapes = shapeDrawer;
-        this.batch.setProjectionMatrix(this.batch.getProjectionMatrix().setToOrtho2D(0, 0, 800, 600));
-    }
-
-    public void end() {
-        shapes = null;
-        batch = null;
-        frameBuffer.end();
-    }
-
-    public Texture getDisplayTexture() {
-        return frameBuffer.getColorBufferTexture();
-    }
-
-    public ShapeDrawer getShapes() {
-        return shapes;
-    }
-
-    public Batch getBatch() {
-        return batch;
-    }
-
-    @Override
-    public void dispose() {
-        batch.dispose();
-        whiteTexture.dispose();
-    }
-
-    public void blit(TextureRegion region, float x, float y, float width, float height) {
-        batch.setColor(Color.WHITE);
-        batch.draw(region, x, y, width, height);
-    }
-
-    public void blit(Texture texture, float x, float y, float width, float height) {
-        batch.setColor(Color.WHITE);
-        batch.draw(texture, x, y, width, height);
-    }
-
-    public void blit(Texture texture, float x, float y, float width, float height, float u, float v, float uWidth, float vHeight) {
-        batch.setColor(Color.WHITE);
-        batch.draw(texture, x, y, width, height, u / texture.getWidth(), v / texture.getHeight(), uWidth / texture.getWidth(), vHeight / texture.getHeight());
-    }
-
-    @ApiStatus.Experimental
-    public void blit(Texture texture, float x, float y, float width, float height, float u, float v, float uWidth, float vHeight, float texWidth, float texHeight) {
-        batch.setColor(Color.WHITE);
-        batch.draw(texture, x, y, width, height, u / (texWidth / texture.getWidth()), v / (texHeight / texture.getHeight()), uWidth / (texWidth / texture.getWidth()), vHeight / (texHeight / texture.getHeight()));
-    }
-
-    public void blit(TextureRegion region, float x, float y, float width, float height, float u, float v, float uWidth, float vHeight) {
-        batch.setColor(Color.WHITE);
-        // TODO: fix
-    }
-
-    public void blit(TextureRegion region, float x, float y) {
-        batch.setColor(Color.WHITE);
-        batch.draw(region, x, y);
-    }
-
-    public void fill(float x, float y, float width, float height, int color) {
-        shapes.setColor(color(color));
-        shapes.filledRectangle(x, y, width, height);
-    }
-
-    private Color color(int color) {
-        return color <= 0xffffff ? colorTmp.set((float) (color >> 16 & 0xff) / 255, (float) (color >> 8 & 0xff) / 255, (float) (color & 0xff) / 255, 1f) : colorTmp.set((float) (color >> 16 & 0xff) / 255, (float) (color >> 8 & 0xff) / 255, (float) (color & 0xff) / 255, (float) (color >> 24 & 0xff) / 255);
-    }
-
-    public void fill(float x, float y, float width, float height, float r, float g, float b, float a) {
-        shapes.setColor(r, g, b, a);
-        shapes.filledRectangle(x, y, width, height);
-    }
-
-    public void renderOutline(float x, float y, float width, float height, int color) {
-        shapes.setColor(color(color));
-        shapes.rectangle(x, y, width, height);
-    }
-
-    public void renderOutline(float x, float y, float width, float height, float r, float g, float b, float a) {
-        shapes.setColor(colorTmp.set(r, g, b, a));
-        shapes.rectangle(x, y, width, height);
+    public void delete() {
+        fbo.delete();
     }
 
     public void translate(int x, int y, int z) {
-        batch.setTransformMatrix(batch.getTransformMatrix().translate(x, y, z));
+        renderCall(() -> {
+            
+        });
     }
 
     public void translate(int x, int y) {
-        batch.setTransformMatrix(batch.getTransformMatrix().translate(x, y, 0));
+        renderCall(() -> {
+
+        });
     }
 
     public void scale(int x, int y, int z) {
-        batch.setTransformMatrix(batch.getTransformMatrix().scale(x, y, z));
+        renderCall(() -> {
+
+        });
     }
 
     public void scale(float x, float y, float z) {
-        batch.setTransformMatrix(batch.getTransformMatrix().scale(x, y, z));
+        renderCall(() -> {
+
+        });
     }
 
     public void scale(float x, float y) {
-        batch.setTransformMatrix(batch.getTransformMatrix().scale(x, y, 1));
+        renderCall(() -> {
+
+        });
     }
 
     public void drawString(String text, int x, int y, int color, boolean shadow) {
-        Color.argb8888ToColor(this.colorTmp, color);
-        batch.setColor(colorTmp);
-        this.font.draw(batch, text, x, y);
-        if (shadow) {
-            this.batch.setColor((float) (color >> 16 & 0xFF) / 511f, (float) (color >> 8 & 0xFF) / 511f, (float) (color & 0xFF) / 511f, (float) (color >> 24 & 0xFF) / 511f);
-            this.font.draw(batch, text, x + 1, y + 1);
-        }
+        renderCall(() -> {
+            Minecraft instance = Minecraft.getInstance();
+            Font font = instance.font;
+
+            GuiGraphics graphics = new GuiGraphics(instance, instance.renderBuffers().crumblingBufferSource());
+            graphics.drawString(font, text, x, y, color, shadow);
+        });
     }
 
     public void drawString(String text, int x, int y, int color) {
-        Color.argb8888ToColor(this.colorTmp, color);
-        batch.setColor(colorTmp);
-        this.font.draw(batch, text, x, y);
+        renderCall(() -> {
+            Minecraft instance = Minecraft.getInstance();
+            Font font = instance.font;
+
+            GuiGraphics graphics = new GuiGraphics(instance, instance.renderBuffers().crumblingBufferSource());
+            graphics.drawString(font, text, x, y, color);
+        });
     }
 
     public void drawCenteredString(String text, int x, int y, int color) {
-        Color.argb8888ToColor(this.colorTmp, color);
-        batch.setColor(colorTmp);
-        this.layout.setText(this.font, text);
-        this.font.draw(batch, this.layout, x - this.layout.width / 2, y);
+        renderCall(() -> {
+            Minecraft instance = Minecraft.getInstance();
+            Font font = instance.font;
+
+            GuiGraphics graphics = new GuiGraphics(instance, instance.renderBuffers().crumblingBufferSource());
+            graphics.drawCenteredString(font, text, x, y, color);
+        });
     }
 
     public void drawCenteredString(String text, int x, int y, int color, boolean shadow) {
-        Color.argb8888ToColor(this.colorTmp, color);
-        batch.setColor(colorTmp);
-        this.layout.setText(this.font, text);
-        this.font.draw(batch, this.layout, x - this.layout.width / 2, y);
-        if (shadow) {
-            this.batch.setColor((float) (color >> 16 & 0xFF) / 511f, (float) (color >> 8 & 0xFF) / 511f, (float) (color & 0xFF) / 511f, (float) (color >> 24 & 0xFF) / 511f);
-            this.font.draw(batch, this.layout, x - this.layout.width / 2 + 1, y + 1);
-        }
+        renderCall(() -> {
+            Minecraft instance = Minecraft.getInstance();
+            Font font = instance.font;
+
+            GuiGraphics graphics = new GuiGraphics(instance, instance.renderBuffers().crumblingBufferSource());
+            graphics.drawString(font, text, x - font.width(text) / 2, y, color, shadow);
+        });
     }
 
     public void setColor(float r, float g, float b, float a) {
-        this.batch.setColor(r, g, b, a);
+        this.red = r;
+        this.green = g;
+        this.blue = b;
+        this.alpha = a;
     }
 
-    public int width(BitmapFont font, String message) {
-        this.layout.setText(font, message);
-        return (int) this.layout.width;
+    public int width(GpuFont font, String message) {
+        return font.mc().width(message);
     }
 
-    public String substrByWidth(BitmapFont font, String message, int width) {
+    public String substrByWidth(GpuFont font, String message, int width) {
         int len = message.length();
         for (int i = 0; i < len; i++) {
             int w = this.width(font, message.substring(0, i + 1) + "...");
@@ -197,24 +124,65 @@ public class GpuRenderer implements Disposable {
         return message;
     }
 
-    public void drawCenteredStringWithoutShadow(BitmapFont font, String s, int x, int y, int color) {
-        Color.argb8888ToColor(this.colorTmp, color);
-        batch.setColor(colorTmp);
-        this.layout.setText(font, s);
-        font.draw(batch, this.layout, x - this.layout.width / 2, y);
+    public void drawCenteredStringWithoutShadow(GpuFont font, String s, int x, int y, int color) {
+        renderCall(() -> {
+            Minecraft instance = Minecraft.getInstance();
+
+            GuiGraphics graphics = new GuiGraphics(instance, instance.renderBuffers().crumblingBufferSource());
+            graphics.drawString(font.mc(), s, x, y, color, false);
+        });
     }
 
-    public void disableBlend() {
-        this.batch.disableBlending();
+    private void renderCall(RenderCall call) {
+        RenderSystem.recordRenderCall(() -> {
+            int width = Minecraft.getInstance().getWindow().getWidth();
+            int height = Minecraft.getInstance().getWindow().getWidth();
+            fbo.bind();
+            if (blend) GlStateManager._enableBlend();
+            else GlStateManager._disableBlend();
+            if (cull) GlStateManager._enableCull();
+            else GlStateManager._disableCull();
+            if (scissorTest) GlStateManager._enableScissorTest();
+            else GlStateManager._disableScissorTest();
+            RenderSystem.setShaderColor(red, green, blue, alpha);
+            GlStateManager._depthMask(depthMask);
+            
+            call.execute();
+            
+            FrameBufferObject.unbind(width, height);
+        });
     }
 
-    public void enableBlend() {
-        this.batch.enableBlending();
+    public boolean isBlend() {
+        return blend;
     }
 
-    public void blit(TextureRegion resource, int x, int y, int width, int height, int u, int v, int uWidth, int vHeight, int texWidth, int texHeight) {
-//        this.batch.draw(resource, x, y, width, height, u, v, uWidth, vHeight, texWidth, texHeight);
-        // TODO
+    public void setBlend(boolean blend) {
+        this.blend = blend;
+    }
+
+    public boolean isDepthMask() {
+        return depthMask;
+    }
+
+    public void setDepthMask(boolean depthMask) {
+        this.depthMask = depthMask;
+    }
+
+    public boolean isCull() {
+        return cull;
+    }
+
+    public void setCull(boolean cull) {
+        this.cull = cull;
+    }
+
+    public boolean isScissorTest() {
+        return scissorTest;
+    }
+
+    public void setScissorTest(boolean scissorTest) {
+        this.scissorTest = scissorTest;
     }
 
     public VirtualGpu getVGpu() {
@@ -222,18 +190,35 @@ public class GpuRenderer implements Disposable {
     }
 
     public void clear() {
-        ScreenUtils.clear(0, 0, 0, 1);
+        renderCall(() -> {
+            glClearColor(0, 0, 0, 1);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        });
     }
 
     public void clear(float r, float g, float b, float a) {
-        ScreenUtils.clear(r, g, b, a);
+        renderCall(() -> {
+            glClearColor(r, g, b, a);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        });
     }
 
     public void reconnectDisplay(int width, int height) {
-
+        
     }
 
-    public FrameBuffer getDisplayBuffer() {
-        return this.frameBuffer;
+    public FrameBufferObject getDisplayBuffer() {
+        return this.fbo;
+    }
+
+    public void fill(int x, int y, int width, int height, int argb) {
+        renderCall(() -> {
+            GuiGraphics graphics = new GuiGraphics(Minecraft.getInstance(), Minecraft.getInstance().renderBuffers().crumblingBufferSource());
+            graphics.fill(x, y, width, height, argb);
+        });   
+    }
+
+    public FrameBufferObject getFbo() {
+        return fbo;
     }
 }

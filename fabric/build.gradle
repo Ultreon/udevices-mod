@@ -17,7 +17,6 @@ dependencies {
     modImplementation "maven.modrinth:modmenu:${modmenu_version}"
 
     modImplementation("dev.ultreon.mods:xinexlib-fabric-1.21.1:0.1.0-SNAPSHOT")
-    modImplementation("dev.ultreon:mcgdx-fabric-1.21.1:0.1.0-SNAPSHOT")
 
     implementation(api(library("space.earlygrey:shapedrawer:$shapedrawer_version")))
     implementation(api(library("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version") {
@@ -32,6 +31,8 @@ dependencies {
     include(implementation(api(library('com.github.Nuix:jnode-fs:v1.0.1'))))
     include(implementation "org.graalvm.polyglot:polyglot:24.1.1")
     include(implementation "org.graalvm.python:python-community:24.1.1")
+
+    implementation(api(library("io.github.kawamuray.wasmtime:wasmtime-java:0.19.0")))
 }
 
 classes {

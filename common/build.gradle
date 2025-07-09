@@ -25,9 +25,9 @@ dependencies {
     compileOnly project(":bootimage")
 
     compileOnly("dev.ultreon.mods:xinexlib-common-1.21.1:0.1.0-SNAPSHOT")
-    compileOnly("dev.ultreon:mcgdx-common-1.21.1:0.1.0-SNAPSHOT")
     compileOnly("org.graalvm.polyglot:polyglot:24.1.1")
     compileOnly("org.graalvm.python:python-community:24.1.1")
+    compileOnlyApi("io.github.kawamuray.wasmtime:wasmtime-java:0.19.0")
 
     // Extra dependencies
     compileOnly "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdx_version", {

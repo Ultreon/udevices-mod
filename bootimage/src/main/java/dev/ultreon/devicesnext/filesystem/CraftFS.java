@@ -1,8 +1,10 @@
 package dev.ultreon.devicesnext.filesystem;
 
-import com.badlogic.gdx.utils.ObjectIntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jnode.driver.block.BlockDeviceAPI;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -13,11 +15,13 @@ import java.util.*;
 
 public class CraftFS implements FS, AutoCloseable {
     private final FileSystem fileSystem;
-    private final ObjectIntMap<PathHandle> sharedLocks = new ObjectIntMap<>();
+    private final Object2IntMap<PathHandle> sharedLocks = new Object2IntArrayMap<>();
     private final Set<PathHandle> exclusiveLocks = new HashSet<>();
+    private BlockDeviceAPI blockDevice;
 
-    public CraftFS(FileSystem fileSystem) {
+    public CraftFS(FileSystem fileSystem, BlockDeviceAPI blockDevice) {
         this.fileSystem = fileSystem;
+        this.blockDevice = blockDevice;
     }
 
     @Override
@@ -55,7 +59,7 @@ public class CraftFS implements FS, AutoCloseable {
         } else if (openOptions.contains(StandardOpenOption.READ)) {
             if (this.exclusiveLocks.contains(path))
                 throw new IOException("File is locked by another process");
-            this.sharedLocks.getAndIncrement(path, 0, 1);
+            this.sharedLocks.computeInt(path, (strings, integer) -> ++integer);
         }
     }
 
@@ -63,7 +67,7 @@ public class CraftFS implements FS, AutoCloseable {
         if (openOptions.contains(StandardOpenOption.WRITE)) {
             this.exclusiveLocks.remove(path);
         } else if (openOptions.contains(StandardOpenOption.READ)) {
-            int i = this.sharedLocks.get(path, 0);
+            int i = this.sharedLocks.getOrDefault(path, 0);
             if (i <= 0) throw new IOException("File lock damaged");
             else if (i == 1) this.sharedLocks.remove(path, 0);
             else this.sharedLocks.put(path, i - 1);
@@ -239,6 +243,11 @@ public class CraftFS implements FS, AutoCloseable {
         if (!toDirNode.isDirectory()) throw new NotDirectoryException(toDir.toString());
 
         IOUtils.copy(new FSInputStream(open(from, StandardOpenOption.READ)), new FSOutputStream(open(toDir.child(from.getName()), StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)));
+    }
+
+    @Override
+    public BlockDeviceAPI getBlockDevice() {
+        return blockDevice;
     }
 
     public class FSByteChannel implements SeekableByteChannel {

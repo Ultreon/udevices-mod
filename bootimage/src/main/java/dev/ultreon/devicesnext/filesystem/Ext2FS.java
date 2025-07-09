@@ -1,7 +1,8 @@
 package dev.ultreon.devicesnext.filesystem;
 
-import com.badlogic.gdx.utils.ObjectIntMap;
 import com.google.common.base.Preconditions;
+import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jnode.driver.block.BlockDeviceAPI;
@@ -28,12 +29,14 @@ import java.util.*;
 @SuppressWarnings("t")
 public class Ext2FS implements FS {
     private final FileSystem<?> fs;
+    private final VirtualBlockDevice blockDevice;
 
-    private final ObjectIntMap<PathHandle> sharedLocks = new ObjectIntMap<>();
+    private final Object2IntMap<PathHandle> sharedLocks = new Object2IntArrayMap<>();
     private final Set<PathHandle> exclusiveLocks = new HashSet<>();
 
-    private Ext2FS(Ext2FileSystem fs) {
+    private Ext2FS(Ext2FileSystem fs, VirtualBlockDevice blockDevice) {
         this.fs = fs;
+        this.blockDevice = blockDevice;
 
         Cleaner cleaner = Cleaner.create();
         cleaner.register(this, () -> {
@@ -57,7 +60,7 @@ public class Ext2FS implements FS {
         var type = new Ext2FileSystemType();
         var fs = new Ext2FileSystem(device, readOnly, type);
         fs.read();
-        return new Ext2FS(fs);
+        return new Ext2FS(fs, blockDevice);
     }
 
     public static Ext2FS openForced(Path filePath) throws IOException, FileSystemException {
@@ -70,7 +73,7 @@ public class Ext2FS implements FS {
         fs.getSuperblock().setState(Ext2Constants.EXT2_VALID_FS);
         fs.flush();
         fs.read();
-        return new Ext2FS(fs);
+        return new Ext2FS(fs, blockDevice);
     }
 
     public static Ext2FS format(Path filePath, long diskSize) throws IOException, FileSystemException {
@@ -82,7 +85,7 @@ public class Ext2FS implements FS {
         var blockDevice = new VirtualBlockDevice(filePath.toFile().getAbsolutePath(), diskSize);
         var formatter = new Ext2FileSystemFormatter(BlockSize._1Kb);
         var fs = formatter.format(device);
-        return new Ext2FS(fs);
+        return new Ext2FS(fs, blockDevice);
     }
 
     @Override
@@ -119,7 +122,7 @@ public class Ext2FS implements FS {
         } else if (openOptions.contains(StandardOpenOption.READ)) {
             if (this.exclusiveLocks.contains(path))
                 throw new IOException("File is locked by another process");
-            this.sharedLocks.getAndIncrement(path, 0, 1);
+            this.sharedLocks.computeInt(path, (strings, integer) -> integer == null ? 1 : ++integer);
         }
     }
 
@@ -128,7 +131,7 @@ public class Ext2FS implements FS {
             if (!this.exclusiveLocks.contains(path)) throw new IOException("File lock damaged");
             this.exclusiveLocks.remove(path);
         } else if (openOptions.contains(StandardOpenOption.READ)) {
-            int i = this.sharedLocks.get(path, 0);
+            int i = this.sharedLocks.getOrDefault(path, 0);
             if (i <= 0) throw new IOException("File lock damaged");
             else if (i == 1) this.sharedLocks.remove(path, 0);
             else this.sharedLocks.put(path, i - 1);
@@ -613,6 +616,11 @@ public class Ext2FS implements FS {
 
     public FileSystem<?> getFileSystem() {
         return fs;
+    }
+
+    @Override
+    public VirtualBlockDevice getBlockDevice() {
+        return blockDevice;
     }
 
     private static class FSInputStream extends InputStream {

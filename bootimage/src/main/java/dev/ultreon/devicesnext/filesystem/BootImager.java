@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
-import java.util.UUID;
 
 public class BootImager {
     public static void main(String[] args) throws FileSystemException, IOException {

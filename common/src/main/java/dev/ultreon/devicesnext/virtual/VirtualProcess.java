@@ -31,7 +31,7 @@ import java.util.function.IntConsumer;
 public class VirtualProcess implements Runnable {
     private static final ThreadLocal<CaptureSlot> captureSlot = new ThreadLocal<>();
     private final int pid;
-    private final FileSystem fs;
+    private final VirtualFileSystem fs;
     private final Value modules;
     private final String init;
     private final String path;
@@ -42,7 +42,6 @@ public class VirtualProcess implements Runnable {
     private Context processContext;
     private final VirtualProcessApi api = VirtualProcessApi.of(this);
     private Context parent;
-    private final Engine engine;
     private final Thread thread;
     private final OutputStream stdin = NullOutputStream.INSTANCE;
     private final InputStream stdout = NullInputStream.INSTANCE;
@@ -57,7 +56,6 @@ public class VirtualProcess implements Runnable {
                           String[] args,
                           Map<String, String> env) {
         this.fs = virtualComputer.getFS();
-        this.engine = virtualComputer.getEngine();
         this.pid = pid;
         this.modules = modules;
         this.init = init;
@@ -151,81 +149,6 @@ public class VirtualProcess implements Runnable {
 
     @Override
     public void run() {
-        try (Context context = Context.newBuilder("python")
-                .environment(env)
-                .allowCreateProcess(false)
-                .allowCreateThread(false)
-                .allowIO(IOAccess.newBuilder().fileSystem(fs).build())
-                .allowValueSharing(true)
-                .allowNativeAccess(false)
-                .allowPolyglotAccess(PolyglotAccess.NONE)
-                .allowHostClassLoading(false)
-                .allowHostAccess(HostAccess.newBuilder()
-                        .allowAccessAnnotatedBy(VirtualApi.class)
-                        .allowListAccess(true)
-                        .allowMapAccess(true)
-                        .allowBufferAccess(true)
-                        .allowArrayAccess(true)
-                        .allowPublicAccess(true)
-                        .allowBigIntegerNumberAccess(true)
-                        .allowIterableAccess(true)
-                        .allowIteratorAccess(true)
-                        .allowImplementations(Object.class)
-                        .allowAllImplementations(false)
-                        .allowAccessInheritance(false)
-                        .denyAccess(Class.class)
-                        .denyAccess(ClassLoader.class)
-                        .denyAccess(MethodHandle.class)
-                        .denyAccess(MethodHandles.class)
-                        .denyAccess(MethodHandles.Lookup.class)
-                        .denyAccess(Method.class)
-                        .denyAccess(Thread.class)
-                        .denyAccess(ProcessHandle.class)
-                        .denyAccess(ProcessBuilder.class)
-                        .denyAccess(Process.class)
-                        .denyAccess(Runtime.class)
-                        .denyAccess(VirtualComputer.class)
-                        .denyAccess(ThreadGroup.class)
-                        .denyAccess(Thread.State.class)
-                        .denyAccess(Thread.UncaughtExceptionHandler.class)
-                        .build())
-                .allowHostClassLookup(s -> s.startsWith("com.ultreon.devices."))
-                .useSystemExit(false)
-                .engine(engine)
-                .timeZone(ZoneId.of("UTC"))
-                .build()) {
-
-            context.enter();
-
-            Value bindings = context.getBindings("python");
-            bindings.putMember("shared", this.modules);
-            context.eval(Source.newBuilder("python", init, "__main__").build());
-            bindings.removeMember("shared");
-
-            bindings.putMember("__file__", path);
-            this.processContext = context;
-
-            try (SeekableByteChannel seekableByteChannel = fs.newByteChannel(Path.of(path), Set.of(StandardOpenOption.READ))) {
-                long size = seekableByteChannel.size();
-                ByteBuffer buffer = ByteBuffer.allocate((int) size);
-                seekableByteChannel.read(buffer);
-                buffer.flip();
-                Value python = context.eval(Source.newBuilder("python", new String(buffer.array(), StandardCharsets.UTF_8), path).encoding(StandardCharsets.UTF_8).build());
-                Value execute = python.getMember("main").execute((Object) args);
-                int anInt = execute.asInt();
-                if (anInt != 0) {
-                    onExit(context, anInt);
-                }
-            } catch (IOException e) {
-                UDevicesMod.LOGGER.error("ERROR:", e);
-                onExit(context, 1);
-            }
-
-            context.leave();
-        } catch (Throwable e) {
-            UDevicesMod.LOGGER.error("ERROR:", e);
-            onExit(processContext, 1);
-        }
     }
 
     public VirtualProcessApi api() {

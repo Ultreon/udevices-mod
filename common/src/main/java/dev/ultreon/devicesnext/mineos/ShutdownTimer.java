@@ -1,4 +1,4 @@
-package dev.ultreon.devicesnext.mineos;
-
-public record ShutdownTimer(long millis) {
-}
+//package dev.ultreon.devicesnext.mineos;
+//
+//public record ShutdownTimer(long millis) {
+//}

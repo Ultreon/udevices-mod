@@ -1,5 +1,7 @@
 package dev.ultreon.devicesnext.filesystem;
 
+import org.jnode.driver.block.BlockDeviceAPI;
+
 import java.io.IOException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.OpenOption;
@@ -31,4 +33,6 @@ public interface FS extends AutoCloseable {
     FileInfo info(PathHandle path) throws IOException;
 
     void copy(PathHandle virtualPath, PathHandle virtualPath1, boolean overwrite) throws IOException;
+
+    BlockDeviceAPI getBlockDevice();
 }
