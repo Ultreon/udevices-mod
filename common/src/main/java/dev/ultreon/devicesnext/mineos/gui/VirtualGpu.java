@@ -84,7 +84,7 @@ public class VirtualGpu {
     }
 
     public void flip() {
-        // What the flip?
+        this.gpuCall(this.gpuRenderer::flip);
     }
 
     private void gpuCall(Runnable o) {
@@ -93,11 +93,12 @@ public class VirtualGpu {
             return;
         }
         CompletableFuture<Void> future = new CompletableFuture<>();
-        Gdx.app.postRunnable(() -> {
+        gpuRenderer.postRunnable(() -> {
             try {
                 onGpu(o);
                 future.complete(null);
             } catch (Exception e) {
+                UDevicesMod.LOGGER.error("GPU call failed", e);
                 future.completeExceptionally(e);
             }
         });
@@ -105,9 +106,7 @@ public class VirtualGpu {
     }
 
     private void onGpu(Runnable o) {
-        gpuRenderer.begin();
         o.run();
-        gpuRenderer.end();
     }
 
     public void drawTexture(int texture, float x, float y, float width, float height) {
@@ -151,7 +150,7 @@ public class VirtualGpu {
     }
 
     public void clear() {
-        this.gpuCall(() -> this.gpuRenderer.clear());
+        this.gpuCall(this.gpuRenderer::clear);
     }
 
     private int createTexture0(byte[] data) {

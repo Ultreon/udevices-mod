@@ -146,7 +146,6 @@ public class VirtualProcess implements Runnable {
         VirtualProcessManagement.remove(parent, this);
         if (onExit != null) onExit.accept(code);
         this.exitValue = code;
-        this.notify();
     }
 
     @Override

@@ -33,6 +33,7 @@ class Main:
             if self.texture == -1:
                 raise Exception(f"Failed to load texture [GL Error {gpu.getErrno()}]: {gpu.getError()}")
 
+            gpu.fill(0, 0, 800, 600, 0xFF4080)
             gpu.fill(0, 0, 50, 50, 0xFF0000)
             gpu.rect(10, 10, 100, 100, 0xFFFF00)
             gpu.fill(20, 20, 50, 50, 0x00FF00)

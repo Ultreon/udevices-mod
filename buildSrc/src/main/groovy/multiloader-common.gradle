@@ -74,15 +74,6 @@ repositories {
         url = 'https://maven.ladysnake.org/releases'
     }
     maven {
-        name = "Ultreon XinexLib (GH Packages)"
-        url = 'https://maven.pkg.github.com/Ultreon/XinexLib'
-
-        credentials {
-            username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
-            password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
-        }
-    }
-    maven {
         name = "Ultreon Maven Releases"
         url = "https://maven.ultreon.dev/releases"
     }

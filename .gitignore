@@ -118,3 +118,4 @@ run/
 !gradle-wrapper.jar
 /virtual_disk.bin
 /fabric/runs/
+/.venv/

@@ -747,13 +747,6 @@ try:
     import libstd
     libstd.syscall = shared["syscall"]
     
-    try:
-        import tkinter
-    except Exception as e:
-        import traceback
-        traceback.print_exception(e)
-        # Ignore the error, as it's literally not be needed at all LMAO
-    
     print("Starting process:", shared["path"])
     del sys, libstd, shared, importlib, importutil, MetaPathFinder, ModuleSpec, os
 except Exception as e:

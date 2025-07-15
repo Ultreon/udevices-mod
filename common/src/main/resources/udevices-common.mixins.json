@@ -1,11 +1,12 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "io.github.ultreon.udevices.mixin",
+  "package": "dev.ultreon.devicesnext.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
   ],
   "client": [
+    "GdxScreenAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

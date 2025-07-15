@@ -1,18 +1,31 @@
 package dev.ultreon.devicesnext.mineos;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.PixmapIO;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.utils.IntMap;
+import com.badlogic.gdx.utils.ScreenUtils;
 import dev.ultreon.devicesnext.filesystem.*;
 import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.api.OperatingSystem;
+import dev.ultreon.devicesnext.mineos.gui.DualFrameBuffer;
 import dev.ultreon.devicesnext.mineos.gui.GpuRenderer;
 import dev.ultreon.devicesnext.mineos.gui.VirtualGpu;
+import dev.ultreon.devicesnext.mixin.GdxScreenAccessor;
 import dev.ultreon.devicesnext.virtual.*;
 import dev.ultreon.mcgdx.impl.GdxScreen;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
 import org.apache.commons.compress.utils.Sets;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.NullInputStream;
@@ -39,6 +52,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -67,6 +81,8 @@ public class VirtualComputer extends GdxScreen {
     private final FS fs;
     private final VirtualFileSystem virtualFS = new VirtualFileSystem(this);
     private final VirtualBiosApi virtualBiosApi = new VirtualBiosApi(this);
+    private DualFrameBuffer fbo = null;
+    private boolean resized = false;
 
     public VirtualComputer(LaunchOptions options) {
         super(options.title);
@@ -82,7 +98,7 @@ public class VirtualComputer extends GdxScreen {
         this.desktopFullscreen = options.fullscreen;
 
         try {
-            Path resolve = UDevicesMod.getDataPath().resolve(String.valueOf(UUID.nameUUIDFromBytes("DevDebug".getBytes(StandardCharsets.UTF_8))) + ".ext2");
+            Path resolve = UDevicesMod.getDataPath().resolve(UUID.nameUUIDFromBytes("DevDebug".getBytes(StandardCharsets.UTF_8)) + ".ext2");
             if (Files.notExists(resolve)) {
                 InputStream resourceAsStream = getClass().getResourceAsStream("/data/" + MOD_ID + "/filesystems/main.ext2");
                 if (resourceAsStream == null) {
@@ -199,6 +215,8 @@ public class VirtualComputer extends GdxScreen {
             }
         }
 
+
+        assert minecraft != null;
         this.gfx.dispose();
 
         try {
@@ -241,13 +259,13 @@ public class VirtualComputer extends GdxScreen {
                                     import traceback
                                     traceback.print_exc()
                                     return -2
-                        
+                    
                             print("Shut down!")
-                        
+                    
                             return 0
                         except BaseException as e:
                             import traceback
-                            traceback.print_exception(e)            
+                            traceback.print_exception(e)
                     
                     bios_main
                     """, "<<bios>>").build());
@@ -276,6 +294,8 @@ public class VirtualComputer extends GdxScreen {
             this.desktopX = (this.width - this.desktopWidth) / 2;
             this.desktopY = (this.height - this.desktopHeight) / 2;
         }
+
+        this.resized = true;
     }
 
     @SafeVarargs
@@ -299,13 +319,24 @@ public class VirtualComputer extends GdxScreen {
             scale = minecraft.getWindow().getGuiScale();
         }
 
-        gfx.begin();
-        gfx.clear(1, 1, 1, 1);
-        gfx.end();
+        if (fbo == null) {
+            fbo = new DualFrameBuffer((int) (width * scale), (int) (height * scale));
+        }
 
-//        batch.begin();
-//        batch.draw(gfx.getDisplayTexture(), 0, (float) height / 2, 30, 30);
-//        batch.end();
+        if (resized) {
+            fbo.resize((int) (width * scale), (int) (height * scale));
+            resized = false;
+        }
+
+        fbo.begin();
+        batch.begin();
+        gfx.runTasks(batch, shapeDrawer, fbo);
+        batch.end();
+        fbo.end();
+
+        batch.begin();
+        batch.draw(fbo.getTexture(), 0, 0, (float) (width * scale), (float) (height * scale));
+        batch.end();
     }
 
     public void render(@NotNull GpuRenderer gfx, int mouseX, int mouseY, float partialTicks) {

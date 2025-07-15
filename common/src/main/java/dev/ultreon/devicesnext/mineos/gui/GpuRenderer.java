@@ -1,62 +1,42 @@
 package dev.ultreon.devicesnext.mineos.gui;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.*;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.google.common.collect.Lists;
+import dev.ultreon.devicesnext.UDevicesMod;
 import dev.ultreon.devicesnext.mineos.VirtualComputer;
 import org.jetbrains.annotations.ApiStatus;
 import space.earlygrey.shapedrawer.ShapeDrawer;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 public class GpuRenderer implements Disposable {
-    private final Batch batch;
-    private final ShapeDrawer shapes;
+    private Batch batch;
+    private ShapeDrawer shapes;
     private Texture whiteTexture;
     private final BitmapFont font = new BitmapFont();
     private final GlyphLayout layout = new GlyphLayout();
-    private final Color colorTmp = new Color();
+    private final Color colorTmp = new Color(1, 1, 1, 1);
     private final VirtualGpu vGpu;
-    private final FrameBuffer frameBuffer;
+    private String error;
+    private final List<Runnable> tasks = new CopyOnWriteArrayList<>();
+    private DualFrameBuffer fbo;
+    private boolean doFlip;
 
     public GpuRenderer(VirtualComputer computer) {
         vGpu = new VirtualGpu(this, computer);
-
-        frameBuffer = new FrameBuffer(Pixmap.Format.RGB888, 800, 600, true);
-
-        this.batch = new SpriteBatch();
-        this.shapes = new ShapeDrawer(batch, createWhitePixel());
-    }
-
-    private TextureRegion createWhitePixel() {
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGB888);
-        pixmap.setColor(Color.WHITE);
-        pixmap.fill();
-        Texture texture = new Texture(pixmap);
-        TextureRegion region = new TextureRegion(texture);
-        pixmap.dispose();
-        whiteTexture = texture;
-        return region;
     }
 
     public void begin() {
-        frameBuffer.begin();
         batch.begin();
     }
 
     public void end() {
         batch.end();
-        frameBuffer.end();
-    }
-
-    public Texture getDisplayTexture() {
-        return frameBuffer.getColorBufferTexture();
-    }
-
-    public ShapeDrawer getShapes() {
-        return shapes;
     }
 
     public Batch getBatch() {
@@ -65,6 +45,11 @@ public class GpuRenderer implements Disposable {
 
     @Override
     public void dispose() {
+        try {
+            batch.end();
+        } catch (NullPointerException ignored) {
+            // Ignored
+        }
         batch.dispose();
         whiteTexture.dispose();
     }
@@ -76,17 +61,28 @@ public class GpuRenderer implements Disposable {
 
     public void blit(Texture texture, float x, float y, float width, float height) {
         batch.setColor(Color.WHITE);
+        if (checkNullTex(texture)) return;
         batch.draw(texture, x, y, width, height);
+    }
+
+    private boolean checkNullTex(Texture texture) {
+        if (texture == null) {
+            this.error = "Texture is null";
+            return true;
+        }
+        return false;
     }
 
     public void blit(Texture texture, float x, float y, float width, float height, float u, float v, float uWidth, float vHeight) {
         batch.setColor(Color.WHITE);
+        if (checkNullTex(texture)) return;
         batch.draw(texture, x, y, width, height, u / texture.getWidth(), v / texture.getHeight(), uWidth / texture.getWidth(), vHeight / texture.getHeight());
     }
 
     @ApiStatus.Experimental
     public void blit(Texture texture, float x, float y, float width, float height, float u, float v, float uWidth, float vHeight, float texWidth, float texHeight) {
         batch.setColor(Color.WHITE);
+        if (checkNullTex(texture)) return;
         batch.draw(texture, x, y, width, height, u / (texWidth / texture.getWidth()), v / (texHeight / texture.getHeight()), uWidth / (texWidth / texture.getWidth()), vHeight / (texHeight / texture.getHeight()));
     }
 
@@ -103,24 +99,21 @@ public class GpuRenderer implements Disposable {
     public void fill(float x, float y, float width, float height, int color) {
         Color.argb8888ToColor(this.colorTmp, color);
         if (colorTmp.a == 0) colorTmp.a = 1;
-        batch.setColor(colorTmp);
         shapes.filledRectangle(x, y, width, height, colorTmp);
     }
 
     public void fill(float x, float y, float width, float height, float r, float g, float b, float a) {
+        colorTmp.set(r, g, b, a);
         if (colorTmp.a == 0) colorTmp.a = 1;
-        batch.setColor(r, g, b, a);
         shapes.filledRectangle(x, y, width, height, colorTmp);
     }
 
     public void renderOutline(float x, float y, float width, float height, int color) {
         Color.argb8888ToColor(this.colorTmp, color);
-        batch.setColor(colorTmp);
         shapes.rectangle(x, y, width, height, colorTmp);
     }
 
     public void renderOutline(float x, float y, float width, float height, float r, float g, float b, float a) {
-        batch.setColor(r, g, b, a);
         shapes.rectangle(x, y, width, height, colorTmp);
     }
 
@@ -228,5 +221,40 @@ public class GpuRenderer implements Disposable {
 
     public void clear(int r, int g, int b, int a) {
         ScreenUtils.clear(r, g, b, a);
+    }
+
+    public void postRunnable(Runnable runnable) {
+        this.tasks.add(runnable);
+    }
+
+    public void runTasks(Batch batch, ShapeDrawer shapes, DualFrameBuffer fbo) {
+        this.fbo = fbo;
+        List<Runnable> tasks1 = Lists.newArrayList(this.tasks);
+        for (Runnable task : tasks1) {
+            try {
+                this.batch = batch;
+                this.shapes = shapes;
+                task.run();
+            } catch (Exception e) {
+                UDevicesMod.LOGGER.error("GPU task failed", e);
+            }
+            if (Thread.currentThread().isInterrupted()) {
+                UDevicesMod.LOGGER.error("GPU task interrupted");
+                break;
+            }
+            if (this.error != null) {
+                UDevicesMod.LOGGER.error("GPU task error: {}", this.error);
+                break;
+            }
+        }
+        tasks1.clear();
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void flip() {
+        fbo.flip();
     }
 }
